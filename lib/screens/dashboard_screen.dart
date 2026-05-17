@@ -1,10 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:pedometer/pedometer.dart';
 import 'package:my_first_app/models/health_data.dart';
 import 'package:my_first_app/services/health_repository.dart';
+import 'package:my_first_app/services/database_service.dart';
 import 'package:my_first_app/widgets/gradient_progress_indicator.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback onThemeToggle;
+  const DashboardScreen({super.key, required this.onThemeToggle});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -13,11 +18,59 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final HealthRepository _repository = HealthRepository();
   late HealthData _data;
+  StreamSubscription<StepCount>? _stepSubscription;
+  bool _permissionGranted = false;
+  bool _sensorWorking = false;
+  int _liveSteps = 0;
 
   @override
   void initState() {
     super.initState();
     _data = _repository.getCurrentData();
+    _requestPermissionAndListen();
+  }
+
+  Future<void> _requestPermissionAndListen() async {
+    // طلب صلاحية النشاط البدني
+    final status = await Permission.activityRecognition.request();
+    if (mounted) {
+      setState(() {
+        _permissionGranted = status.isGranted;
+      });
+    }
+
+    if (status.isGranted) {
+      // بدء الاستماع للخطوات من المستشعر مباشرة
+      try {
+        _stepSubscription = Pedometer.stepCountStream.listen(
+          (StepCount event) {
+            if (mounted) {
+              setState(() {
+                _sensorWorking = true;
+                _liveSteps = event.steps;
+              });
+              // حفظ في قاعدة البيانات
+              DatabaseService().addSteps(event.steps);
+            }
+          },
+          onError: (error) {
+            if (mounted) {
+              setState(() => _sensorWorking = false);
+            }
+          },
+        );
+      } catch (e) {
+        if (mounted) {
+          setState(() => _sensorWorking = false);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _stepSubscription?.cancel();
+    super.dispose();
   }
 
   void _refresh() {
@@ -47,12 +100,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
+              // مؤشرات الحالة
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildStatusChip(
+                    icon: _permissionGranted ? Icons.check_circle : Icons.cancel,
+                    label: _permissionGranted ? 'الصلاحية ممنوحة' : 'الصلاحية مرفوضة',
+                    color: _permissionGranted ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildStatusChip(
+                    icon: _sensorWorking ? Icons.sensors : Icons.sensors_off,
+                    label: _sensorWorking ? 'المستشعر يعمل' : 'المستشعر متوقف',
+                    color: _sensorWorking ? Colors.green : Colors.orange,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               Text(
                 _getGreeting(),
                 style: TextStyle(
@@ -71,9 +142,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              // عداد الخطوات الحي
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      '$_liveSteps',
+                      style: TextStyle(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      'خطوة',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
               Center(
                 child: GradientProgressIndicator(
-                  progress: _data.readinessScore,
+                  progress: (_liveSteps / 10000).clamp(0.0, 1.0),
                   size: 160,
                   strokeWidth: 12,
                   gradientColors: [
@@ -85,55 +179,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 12),
               Center(
                 child: Text(
-                  'درجة الجاهزية',
+                  'الهدف: 10,000 خطوة',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildActivityRing(
-                    icon: Icons.directions_run_rounded,
-                    title: 'الخطوات',
-                    value: _data.steps,
-                    goal: 10000,
-                    color: Colors.green,
-                  ),
-                  _buildActivityRing(
-                    icon: Icons.water_drop_rounded,
-                    title: 'الماء',
-                    value: _data.waterCups,
-                    goal: 8,
-                    color: Colors.blue,
-                  ),
-                  _buildActivityRing(
-                    icon: Icons.bedtime_rounded,
-                    title: 'النوم',
-                    value: _data.sleepHours.toInt(),
-                    goal: 8,
-                    color: Colors.purple,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStat('متوسط الخطوات', '${_data.weeklyStepsAvg.toInt()}'),
-                    _buildStat('السعرات', '${(_data.steps * 0.04).toInt()}'),
-                    _buildStat('المسافة', '${(_data.steps * 0.7 / 1000).toStringAsFixed(1)} كم'),
-                  ],
                 ),
               ),
             ],
@@ -150,50 +201,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return 'ليلة سعيدة';
   }
 
-  Widget _buildActivityRing({
+  Widget _buildStatusChip({
     required IconData icon,
-    required String title,
-    required int value,
-    required int goal,
+    required String label,
     required Color color,
   }) {
-    final progress = (value / goal).clamp(0.0, 1.0);
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 70,
-              height: 70,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 6,
-                backgroundColor: color.withOpacity(0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-              ),
-            ),
-            Icon(icon, color: color, size: 28),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-        Text(
-          '$value / $goal',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontSize: 12)),
+        ],
+      ),
     );
   }
-
-  Widget _buildStat(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-      ],
-    );
-  }
-}// Force rebuild
-// Force rebuild
+}
