@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "97056173794",
+    "project_id": "fez-app-52360",
+    "storage_bucket": "fez-app-52360.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:97056173794:android:d6e5a99eb32119886838bb",
+        "android_client_info": {
+          "package_name": "com.example.my_first_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4Txj2En3ldZbgcHliHhlYeT0CezzaeXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
