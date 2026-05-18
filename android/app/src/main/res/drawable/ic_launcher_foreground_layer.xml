@@ -4,7 +4,29 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- الجسم -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,54m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0"/>
+        android:pathData="M54,30 C58,30 62,34 62,38 L62,50 C62,54 58,58 54,58 L46,58 C42,58 38,54 38,50 L38,38 C38,34 42,30 46,30 Z"/>
+    <!-- الرأس -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,18 C56,18 60,22 60,26 C60,30 56,34 52,34 C48,34 44,30 44,26 C44,22 48,18 52,18 Z"/>
+    <!-- الذراع اليسرى -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,38 L38,48 L42,52 L50,42 Z"/>
+    <!-- الذراع اليمنى -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,38 L70,48 L66,52 L58,42 Z"/>
+    <!-- الساق اليسرى -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,58 L40,78 L48,78 L50,62 Z"/>
+    <!-- الساق اليمنى -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,58 L60,78 L52,78 L50,62 Z"/>
 </vector>
