@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:hijri_date/hijri.dart';
+import 'package:hijri_date/hijri_date.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:nafahat/screens/quran_screen.dart';
+import 'package:nafahat/screens/prayer_times_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    HijriDate.setLocal('ar'); // تهيئة اللغة العربية
+    HijriDate.setLocal('ar');
     _updateDateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
   }
@@ -35,11 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final timeFormat = DateFormat('hh:mm:ss a', 'ar');
 
     final today = HijriDate.now();
-    final hijriMonth = today.hMonth;
-    final hijriDay = today.hDay;
-    final hijriYear = today.hYear;
-
-    // قائمة أسماء الشهور الهجرية
     const months = [
       'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
       'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
@@ -48,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       _currentTime = timeFormat.format(makkahTime);
-      _hijriDate = '$hijriDay ${months[hijriMonth - 1]} $hijriYear هـ';
+      _hijriDate = '${today.hDay} ${months[today.hMonth - 1]} ${today.hYear} هـ';
     });
   }
 
@@ -58,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('نفحات', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('نفحات', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -67,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             const SizedBox(height: 10),
+            // الوقت والتاريخ
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -120,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 30),
+            // القرآن الكريم
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -177,14 +176,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            // الصف الأول
             Row(
               children: [
-                Expanded(child: _buildSmallButton(icon: Icons.mosque_rounded, title: 'الصلاة', onTap: () {})),
+                Expanded(child: _buildSmallButton(icon: Icons.mosque_rounded, title: 'مواقيت الصلاة', onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrayerTimesScreen()),
+                  );
+                })),
                 const SizedBox(width: 10),
                 Expanded(child: _buildSmallButton(icon: Icons.book_rounded, title: 'الأحاديث', onTap: () {})),
               ],
             ),
             const SizedBox(height: 10),
+            // الصف الثاني
             Row(
               children: [
                 Expanded(child: _buildSmallButton(icon: Icons.fingerprint, title: 'المسبحة', onTap: () {})),
