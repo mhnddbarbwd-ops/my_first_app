@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:hijri/hijri.dart';
 import 'package:nafahat/screens/quran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,33 +14,35 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _currentTime = '';
   String _hijriDate = '';
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _updateTime();
-    Future.delayed(const Duration(seconds: 1), _updateTime);
+    _updateDateTime();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
   }
 
-  void _updateTime() {
-    final now = DateTime.now();
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _updateDateTime() {
     // توقيت مكة المكرمة (UTC+3)
-    final makkahTime = now.toUtc().add(const Duration(hours: 3));
+    final makkahTime = DateTime.now().toUtc().add(const Duration(hours: 3));
     final timeFormat = DateFormat('hh:mm:ss a', 'ar');
     
-    // تاريخ هجري (سنستخدم حساب مبسط)
-    final hijriMonths = [
-      'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
-      'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
-      'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
-    ];
-    final hijriYear = (now.year - 622) * 33 / 32;
-    final hijriDay = now.day;
-    final hijriMonth = hijriMonths[(now.month - 1) % 12];
+    // التاريخ الهجري الصحيح باستخدام مكتبة hijri (تقويم أم القرى)
+    final hijri = HijriDateTime.now();
+    final hijriDay = hijri.hDay;
+    final hijriMonth = hijri.longMonthName; // الاسم الطويل للشهر بالعربية
+    final hijriYear = hijri.hYear;
     
     setState(() {
       _currentTime = timeFormat.format(makkahTime);
-      _hijriDate = '$hijriDay $hijriMonth ${hijriYear.round()} هـ';
+      _hijriDate = '$hijriDay $hijriMonth $hijriYear هـ';
     });
   }
 
