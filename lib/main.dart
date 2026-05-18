@@ -35,7 +35,9 @@ class NafahatApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorSchemeSeed: const Color(0xFF1B5E20),
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme),
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+          ThemeData.dark().textTheme,
+        ),
       ),
       home: const SplashScreen(),
     );
