@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _themeMode = mode);
     // تطبيق الثيم على التطبيق بالكامل
     final app = context.findAncestorStateOfType<State>();
-    if (app != null && app is dynamic) {
+    if (app != null) {
       (app as dynamic).setState(() {});
     }
   }
