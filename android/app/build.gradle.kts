@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.my_first_app"
+    namespace = "com.nafahat.quran"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.my_first_app"
+        applicationId = "com.nafahat.quran"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

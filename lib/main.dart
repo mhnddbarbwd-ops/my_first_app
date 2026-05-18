@@ -1,39 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:my_first_app/screens/dashboard_screen.dart';
+import 'package:nafahat/screens/splash_screen.dart';
 
 void main() {
-  runApp(const FezApp());
+  runApp(const NafahatApp());
 }
 
-class FezApp extends StatefulWidget {
-  const FezApp({super.key});
-
-  @override
-  State<FezApp> createState() => _FezAppState();
-}
-
-class _FezAppState extends State<FezApp> {
-  ThemeMode _themeMode = ThemeMode.light;
-
-  void _toggleTheme() {
-    setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
+class NafahatApp extends StatelessWidget {
+  const NafahatApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'فِـز',
-      themeMode: _themeMode,
+      title: 'نفحات',
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        colorSchemeSeed: const Color(0xFF006A6A),
-        scaffoldBackgroundColor: const Color(0xFFF0F4F8),
+        colorSchemeSeed: const Color(0xFF1B5E20),
+        scaffoldBackgroundColor: const Color(0xFFF5F0E8),
         textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
@@ -42,30 +27,17 @@ class _FezAppState extends State<FezApp> {
           titleTextStyle: GoogleFonts.ibmPlexSansArabic(
             fontWeight: FontWeight.w900,
             fontSize: 22,
-            color: const Color(0xFF006A6A),
+            color: const Color(0xFF1B5E20),
           ),
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        colorSchemeSeed: const Color(0xFF006A6A),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
-          ThemeData.dark().textTheme,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            fontSize: 22,
-            color: const Color(0xFF80CBC4),
-          ),
-        ),
+        colorSchemeSeed: const Color(0xFF1B5E20),
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme),
       ),
-      home: DashboardScreen(onThemeToggle: _toggleTheme),
+      home: const SplashScreen(),
     );
   }
 }
