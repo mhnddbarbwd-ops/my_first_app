@@ -22,13 +22,16 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   void _calculateTimes() {
     final pt = PrayerTimes();
     final now = DateTime.now();
-    // إحداثيات حضرموت (سيئون)
+    // جلب المنطقة الزمنية للجهاز الحالي
+    final timezoneOffset = now.timeZoneOffset.inHours;
+
     final times = pt.getTimes(
       date: now,
       latitude: 15.9477,
       longitude: 48.7866,
       method: CalculationMethod.makkah,
       asrMethod: AsrMethod.standard,
+      timezone: timezoneOffset, // تمت إضافة هذا السطر
     );
 
     setState(() {
