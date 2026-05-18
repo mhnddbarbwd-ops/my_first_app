@@ -31,7 +31,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       longitude: 48.7866,
       method: CalculationMethod.makkah,
       asrMethod: AsrMethod.standard,
-      timezone: timezoneOffset, // تمت إضافة هذا السطر
+      timezone: timezoneOffset.toDouble(), // تمت إضافة هذا السطر
     );
 
     setState(() {
