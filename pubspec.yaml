@@ -16,6 +16,7 @@ dependencies:
   google_fonts: ^6.1.0
   intl: ^0.20.2
   audioplayers: ^6.0.0
+  flutter_prayer_time_calculator: ^0.0.2
   qcf_quran: ^0.0.5
   hijri_date: ^1.1.0
 
