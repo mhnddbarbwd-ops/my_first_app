@@ -17,6 +17,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   bool _permissionDenied = false;
   bool _permissionDeniedForever = false;
   String _locationName = '';
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -29,13 +30,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       _isLoading = true;
       _permissionDenied = false;
       _permissionDeniedForever = false;
+      _errorMessage = null;
     });
 
-    // 1. التحقق من حالة صلاحية الموقع
     LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.deniedForever) {
-      // المستخدم رفض الصلاحية بشكل دائم
       setState(() {
         _permissionDeniedForever = true;
         _isLoading = false;
@@ -44,7 +44,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
 
     if (permission == LocationPermission.denied) {
-      // طلب الصلاحية لأول مرة أو بعد رفض سابق
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         setState(() {
@@ -62,13 +61,11 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       }
     }
 
-    // 2. الصلاحية ممنوحة، جلب الموقع
     await _getLocationAndCalculate();
   }
 
   Future<void> _getLocationAndCalculate() async {
     try {
-      // التحقق من تفعيل خدمة الموقع في الجهاز
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
@@ -82,22 +79,28 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             ),
           );
         }
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'خدمة الموقع غير مفعلة';
+        });
         return;
       }
 
+      // إضافة مهلة زمنية لطلب الموقع (10 ثوانٍ)
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('تعذر تحديد الموقع في الوقت المحدد');
+      });
 
       _locationName = 'موقعك الحالي';
       _calculateTimes(position.latitude, position.longitude);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر تحديد موقعك. حاول مجدداً.')),
-        );
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'تعذر تحديد موقعك. حاول مجدداً.';
+        });
       }
     }
   }
@@ -119,6 +122,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     setState(() {
       _times = times;
       _isLoading = false;
+      _errorMessage = null;
     });
   }
 
@@ -128,16 +132,104 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('مواقيت الصلاة',
-            style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
+        title: Text('مواقيت الصلاة', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoading(colorScheme)
           : _permissionDenied || _permissionDeniedForever
               ? _buildPermissionDeniedView(colorScheme)
-              : _buildPrayerTimesView(colorScheme),
+              : _errorMessage != null
+                  ? _buildErrorView(colorScheme)
+                  : _buildPrayerTimesView(colorScheme),
+    );
+  }
+
+  // مؤشر تحميل Shimmer حديث
+  Widget _buildShimmerLoading(ColorScheme colorScheme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: List.generate(7, (index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.surface.withOpacity(0.5),
+                      colorScheme.surface.withOpacity(0.25),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(color: colorScheme.primary.withOpacity(0.2), width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: colorScheme.primary.withOpacity(0.1),
+                      ),
+                      child: Icon(Icons.access_time, color: colorScheme.primary.withOpacity(0.3), size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text('تحميل المواقيت...', style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface.withOpacity(0.5))),
+                    ),
+                    Text('--:--', style: GoogleFonts.ibmPlexSansArabic(fontSize: 20, fontWeight: FontWeight.w900, color: colorScheme.primary.withOpacity(0.3))),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildErrorView(ColorScheme colorScheme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorScheme.error.withOpacity(0.1),
+              ),
+              child: Icon(Icons.error_outline_rounded, size: 50, color: colorScheme.error),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              _errorMessage ?? 'حدث خطأ',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+            ),
+            const SizedBox(height: 32),
+            _buildGlassButton(
+              context,
+              icon: Icons.refresh_rounded,
+              label: 'إعادة المحاولة',
+              onTap: _requestLocationPermission,
+              colorScheme: colorScheme,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -155,20 +247,13 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                 shape: BoxShape.circle,
                 color: colorScheme.error.withOpacity(0.1),
               ),
-              child: Icon(Icons.location_off_rounded,
-                  size: 50, color: colorScheme.error),
+              child: Icon(Icons.location_off_rounded, size: 50, color: colorScheme.error),
             ),
             const SizedBox(height: 24),
             Text(
-              _permissionDeniedForever
-                  ? 'تم رفض الوصول إلى الموقع بشكل دائم'
-                  : 'تم رفض الوصول إلى الموقع',
+              _permissionDeniedForever ? 'تم رفض الوصول إلى الموقع بشكل دائم' : 'تم رفض الوصول إلى الموقع',
               textAlign: TextAlign.center,
-              style: GoogleFonts.ibmPlexSansArabic(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
+              style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 12),
             Text(
@@ -176,10 +261,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                   ? 'يرجى الذهاب إلى إعدادات الجهاز ومنح صلاحية الموقع للتطبيق'
                   : 'يجب منح صلاحية الموقع لحساب مواقيت الصلاة بدقة',
               textAlign: TextAlign.center,
-              style: GoogleFonts.ibmPlexSansArabic(
-                fontSize: 14,
-                color: colorScheme.onSurface.withOpacity(0.7),
-              ),
+              style: GoogleFonts.ibmPlexSansArabic(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.7)),
             ),
             const SizedBox(height: 32),
             if (_permissionDeniedForever)
@@ -246,8 +328,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(
-                color: colorScheme.primary.withOpacity(0.25), width: 1),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.25), width: 1),
           ),
           child: Row(
             children: [
@@ -258,32 +339,22 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                   color: colorScheme.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(Icons.location_on_rounded,
-                    color: colorScheme.primary, size: 26),
+                child: Icon(Icons.location_on_rounded, color: colorScheme.primary, size: 26),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('الموقع الحالي',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                colorScheme.onSurface.withOpacity(0.6))),
+                    Text('الموقع الحالي', style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.6))),
                     const SizedBox(height: 2),
-                    Text(_locationName,
-                        style: GoogleFonts.ibmPlexSansArabic(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface)),
+                    Text(_locationName, style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
                   ],
                 ),
               ),
               IconButton(
                 onPressed: _requestLocationPermission,
-                icon: Icon(Icons.my_location_rounded,
-                    color: colorScheme.primary, size: 26),
+                icon: Icon(Icons.my_location_rounded, color: colorScheme.primary, size: 26),
                 tooltip: 'تحديث الموقع',
               ),
             ],
@@ -293,8 +364,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     );
   }
 
-  Widget _buildPrayerCard(
-      String name, String time, IconData icon, ColorScheme colorScheme) {
+  Widget _buildPrayerCard(String name, String time, IconData icon, ColorScheme colorScheme) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
@@ -311,8 +381,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(
-                color: colorScheme.primary.withOpacity(0.2), width: 1),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.2), width: 1),
           ),
           child: Row(
             children: [
@@ -327,17 +396,9 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(name,
-                    style: GoogleFonts.ibmPlexSansArabic(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface)),
+                child: Text(name, style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               ),
-              Text(time,
-                  style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.primary)),
+              Text(time, style: GoogleFonts.ibmPlexSansArabic(fontSize: 20, fontWeight: FontWeight.w900, color: colorScheme.primary)),
             ],
           ),
         ),
@@ -367,8 +428,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(
-                color: colorScheme.primary.withOpacity(0.3), width: 1),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.3), width: 1),
           ),
           child: Material(
             color: Colors.transparent,
@@ -376,8 +436,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               onTap: onTap,
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:nafahat/main.dart'; // لاستيراد appKey
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
 
@@ -17,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentTime = '';
   String _hijriDate = '';
   Timer? _timer;
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _selectedTheme = ThemeMode.system;
 
   @override
   void initState() {
@@ -25,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
     HijriDate.setLocal('ar');
     _updateDateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
+    // قراءة الثيم الحالي من التطبيق
+    _selectedTheme = appKey.currentState?.currentThemeMode ?? ThemeMode.system;
   }
 
   @override
@@ -51,12 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _changeTheme(ThemeMode mode) {
-    setState(() => _themeMode = mode);
-    // تطبيق الثيم على التطبيق بالكامل
-    final app = context.findAncestorStateOfType<State>();
-    if (app != null) {
-      (app as dynamic).setState(() {});
-    }
+    setState(() => _selectedTheme = mode);
+    appKey.currentState?.toggleTheme(mode); // استدعاء toggleTheme من NafahatApp
   }
 
   @override
@@ -69,22 +68,19 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          // زر الوضع الفاتح
           IconButton(
             onPressed: () => _changeTheme(ThemeMode.light),
-            icon: Icon(Icons.light_mode_rounded, color: _themeMode == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
+            icon: Icon(Icons.light_mode_rounded, color: _selectedTheme == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
             tooltip: 'الوضع الفاتح',
           ),
-          // زر يتبع النظام
           IconButton(
             onPressed: () => _changeTheme(ThemeMode.system),
-            icon: Icon(Icons.settings_suggest_rounded, color: _themeMode == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
+            icon: Icon(Icons.settings_suggest_rounded, color: _selectedTheme == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
             tooltip: 'يتبع النظام',
           ),
-          // زر الوضع الليلي
           IconButton(
             onPressed: () => _changeTheme(ThemeMode.dark),
-            icon: Icon(Icons.dark_mode_rounded, color: _themeMode == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
+            icon: Icon(Icons.dark_mode_rounded, color: _selectedTheme == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
             tooltip: 'الوضع الليلي',
           ),
         ],
