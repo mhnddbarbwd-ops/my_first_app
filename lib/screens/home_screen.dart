@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentTime = '';
   String _hijriDate = '';
   Timer? _timer;
+  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   void initState() {
@@ -49,6 +50,15 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _changeTheme(ThemeMode mode) {
+    setState(() => _themeMode = mode);
+    // تطبيق الثيم على التطبيق بالكامل
+    final app = context.findAncestorStateOfType<State>();
+    if (app != null && app is dynamic) {
+      (app as dynamic).setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -58,6 +68,26 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text('نفحات', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          // زر الوضع الفاتح
+          IconButton(
+            onPressed: () => _changeTheme(ThemeMode.light),
+            icon: Icon(Icons.light_mode_rounded, color: _themeMode == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
+            tooltip: 'الوضع الفاتح',
+          ),
+          // زر يتبع النظام
+          IconButton(
+            onPressed: () => _changeTheme(ThemeMode.system),
+            icon: Icon(Icons.settings_suggest_rounded, color: _themeMode == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
+            tooltip: 'يتبع النظام',
+          ),
+          // زر الوضع الليلي
+          IconButton(
+            onPressed: () => _changeTheme(ThemeMode.dark),
+            icon: Icon(Icons.dark_mode_rounded, color: _themeMode == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
+            tooltip: 'الوضع الليلي',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -137,12 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const QuranScreen()),
-                    );
-                  },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -176,21 +201,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // الصف الأول
             Row(
               children: [
                 Expanded(child: _buildSmallButton(icon: Icons.mosque_rounded, title: 'مواقيت الصلاة', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PrayerTimesScreen()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen()));
                 })),
                 const SizedBox(width: 10),
                 Expanded(child: _buildSmallButton(icon: Icons.book_rounded, title: 'الأحاديث', onTap: () {})),
               ],
             ),
             const SizedBox(height: 10),
-            // الصف الثاني
             Row(
               children: [
                 Expanded(child: _buildSmallButton(icon: Icons.fingerprint, title: 'المسبحة', onTap: () {})),
@@ -204,11 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSmallButton({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildSmallButton({required IconData icon, required String title, required VoidCallback onTap}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
