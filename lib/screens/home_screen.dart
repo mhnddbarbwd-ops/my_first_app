@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:ummalqura_calendar/ummalqura_calendar.dart';
+import 'package:hijri/hijri.dart';
 import 'package:nafahat/screens/quran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final makkahTime = DateTime.now().toUtc().add(const Duration(hours: 3));
     final timeFormat = DateFormat('hh:mm:ss a', 'ar');
 
-    final hijri = UmAlQuraCalendar.now();
+    final hijri = HijriCalendar.now();
     final hijriDay = hijri.hDay;
     final hijriMonth = hijri.longMonthName;
     final hijriYear = hijri.hYear;
