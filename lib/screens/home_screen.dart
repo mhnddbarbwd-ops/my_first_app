@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:hijri/hijri.dart';
+import 'package:hijri_date/hijri.dart';
 import 'package:nafahat/screens/quran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    HijriDate.setLocal('ar'); // تهيئة اللغة العربية
     _updateDateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
   }
@@ -33,14 +34,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final makkahTime = DateTime.now().toUtc().add(const Duration(hours: 3));
     final timeFormat = DateFormat('hh:mm:ss a', 'ar');
 
-    final hijri = HijriCalendar.now();
-    final hijriDay = hijri.hDay;
-    final hijriMonth = hijri.longMonthName;
-    final hijriYear = hijri.hYear;
+    final today = HijriDate.now();
+    final hijriMonth = today.hMonth;
+    final hijriDay = today.hDay;
+    final hijriYear = today.hYear;
+
+    // قائمة أسماء الشهور الهجرية
+    const months = [
+      'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
+      'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+      'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+    ];
 
     setState(() {
       _currentTime = timeFormat.format(makkahTime);
-      _hijriDate = '$hijriDay $hijriMonth $hijriYear هـ';
+      _hijriDate = '$hijriDay ${months[hijriMonth - 1]} $hijriYear هـ';
     });
   }
 
@@ -72,10 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.2),
-                  width: 1,
-                ),
+                border: Border.all(color: colorScheme.primary.withOpacity(0.2), width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: colorScheme.primary.withOpacity(0.1),
@@ -86,27 +91,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    size: 40,
-                    color: colorScheme.primary,
-                  ),
+                  Icon(Icons.access_time_rounded, size: 40, color: colorScheme.primary),
                   const SizedBox(height: 12),
                   Text(
                     _currentTime,
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.primary,
-                    ),
+                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: colorScheme.primary),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'توقيت مكة المكرمة',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface.withOpacity(0.5),
-                    ),
+                    style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5)),
                   ),
                   const SizedBox(height: 16),
                   Divider(color: colorScheme.primary.withOpacity(0.2)),
@@ -114,19 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.calendar_month_rounded,
-                        size: 20,
-                        color: colorScheme.primary,
-                      ),
+                      Icon(Icons.calendar_month_rounded, size: 20, color: colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         _hijriDate,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface.withOpacity(0.8),
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface.withOpacity(0.8)),
                       ),
                     ],
                   ),
@@ -139,10 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 gradient: LinearGradient(
-                  colors: [
-                    colorScheme.primary,
-                    colorScheme.primary.withOpacity(0.8),
-                  ],
+                  colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -173,41 +156,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          child: const Icon(
-                            Icons.menu_book_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                          child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 28),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'القرآن الكريم',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              const Text('القرآن الكريم', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
                               const SizedBox(height: 4),
-                              Text(
-                                'مصحف المدينة النبوية - قراءة وتلاوة',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ),
+                              Text('مصحف المدينة النبوية - قراءة وتلاوة', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.8))),
                             ],
                           ),
                         ),
-                        const Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white,
-                          size: 18,
-                        ),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
                       ],
                     ),
                   ),
@@ -217,41 +179,17 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(
-                  child: _buildSmallButton(
-                    icon: Icons.mosque_rounded,
-                    title: 'الصلاة',
-                    onTap: () {},
-                  ),
-                ),
+                Expanded(child: _buildSmallButton(icon: Icons.mosque_rounded, title: 'الصلاة', onTap: () {})),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: _buildSmallButton(
-                    icon: Icons.book_rounded,
-                    title: 'الأحاديث',
-                    onTap: () {},
-                  ),
-                ),
+                Expanded(child: _buildSmallButton(icon: Icons.book_rounded, title: 'الأحاديث', onTap: () {})),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                Expanded(
-                  child: _buildSmallButton(
-                    icon: Icons.fingerprint,
-                    title: 'المسبحة',
-                    onTap: () {},
-                  ),
-                ),
+                Expanded(child: _buildSmallButton(icon: Icons.fingerprint, title: 'المسبحة', onTap: () {})),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: _buildSmallButton(
-                    icon: Icons.explore_rounded,
-                    title: 'القبلة',
-                    onTap: () {},
-                  ),
-                ),
+                Expanded(child: _buildSmallButton(icon: Icons.explore_rounded, title: 'القبلة', onTap: () {})),
               ],
             ),
           ],
@@ -269,10 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.primary.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.15), width: 1),
         color: colorScheme.surface.withOpacity(0.8),
       ),
       child: Material(
@@ -286,14 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(icon, color: colorScheme.primary, size: 28),
                 const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
+                Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               ],
             ),
           ),
