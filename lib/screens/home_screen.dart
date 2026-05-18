@@ -30,16 +30,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateDateTime() {
-    // توقيت مكة المكرمة (UTC+3)
     final makkahTime = DateTime.now().toUtc().add(const Duration(hours: 3));
     final timeFormat = DateFormat('hh:mm:ss a', 'ar');
-    
-    // التاريخ الهجري الصحيح باستخدام مكتبة hijri (تقويم أم القرى)
-    final hijri = HijriDateTime.now();
+
+    final hijri = HijriCalendar.now();
     final hijriDay = hijri.hDay;
-    final hijriMonth = hijri.longMonthName; // الاسم الطويل للشهر بالعربية
+    final hijriMonth = hijri.longMonthName;
     final hijriYear = hijri.hYear;
-    
+
     setState(() {
       _currentTime = timeFormat.format(makkahTime);
       _hijriDate = '$hijriDay $hijriMonth $hijriYear هـ';
@@ -61,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             const SizedBox(height: 10),
-            // بطاقة الوقت والتاريخ
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -89,14 +86,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Column(
                 children: [
-                  // أيقونة الساعة
                   Icon(
                     Icons.access_time_rounded,
                     size: 40,
                     color: colorScheme.primary,
                   ),
                   const SizedBox(height: 12),
-                  // الوقت الحالي
                   Text(
                     _currentTime,
                     style: TextStyle(
@@ -116,7 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   Divider(color: colorScheme.primary.withOpacity(0.2)),
                   const SizedBox(height: 16),
-                  // التاريخ الهجري
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -140,8 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 30),
-
-            // زر القرآن الكريم (عريض وطويل)
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -223,8 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // الأزرار الأربعة المقترحة
             Row(
               children: [
                 Expanded(
