@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_ibadah/flutter_ibadah.dart';
+import 'package:flutter_prayer_time_calculator/flutter_prayer_time_calculator.dart';
 import 'package:geolocator/geolocator.dart';
 
 class PrayerTimesScreen extends StatefulWidget {
@@ -11,6 +11,7 @@ class PrayerTimesScreen extends StatefulWidget {
 }
 
 class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
+  Map<PrayerTime, String> _times = {};
   bool _isLoading = true;
   bool _permissionDenied = false;
   bool _permissionDeniedForever = false;
@@ -52,10 +53,25 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10)),
       );
-      setState(() { _position = position; _isLoading = false; });
+      setState(() { _position = position; _calculateTimes(position.latitude, position.longitude); });
     } catch (e) {
       setState(() { _isLoading = false; _errorMessage = 'تعذر تحديد الموقع. حاول مجدداً.'; });
     }
+  }
+
+  void _calculateTimes(double latitude, double longitude) {
+    final pt = PrayerTimes();
+    final now = DateTime.now();
+    final timezoneOffset = now.timeZoneOffset.inHours;
+    final times = pt.getTimes(
+      date: now,
+      latitude: latitude,
+      longitude: longitude,
+      method: CalculationMethod.makkah,
+      asrMethod: AsrMethod.standard,
+      timezone: timezoneOffset.toDouble(),
+    );
+    setState(() { _times = times; _isLoading = false; });
   }
 
   @override
@@ -101,13 +117,21 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   }
 
   Widget _buildTimesView(ColorScheme colorScheme) {
+    final prayers = [
+      ('الفجر', _times[PrayerTime.fajr] ?? '--:--', Icons.wb_twilight),
+      ('الشروق', _times[PrayerTime.sunrise] ?? '--:--', Icons.sunny),
+      ('الظهر', _times[PrayerTime.dhuhr] ?? '--:--', Icons.wb_sunny),
+      ('العصر', _times[PrayerTime.asr] ?? '--:--', Icons.wb_cloudy),
+      ('المغرب', _times[PrayerTime.maghrib] ?? '--:--', Icons.nights_stay),
+      ('العشاء', _times[PrayerTime.isha] ?? '--:--', Icons.bedtime),
+    ];
+
     return Scaffold(
       appBar: AppBar(title: Text('مواقيت الصلاة', style: GoogleFonts.ibmPlexSansArabic())),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -127,11 +151,28 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        IbadahWidget(
-          latitude: _position!.latitude,
-          longitude: _position!.longitude,
-          locale: const Locale('ar'),
-        ),
+        ...prayers.map((p) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(colors: [colorScheme.surface.withOpacity(0.5), colorScheme.surface.withOpacity(0.25)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  border: Border.all(color: colorScheme.primary.withOpacity(0.2), width: 1),
+                ),
+                child: Row(children: [
+                  Container(width: 42, height: 42, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: colorScheme.primary.withOpacity(0.1)), child: Icon(p.$3, color: colorScheme.primary, size: 22)),
+                  const SizedBox(width: 14),
+                  Expanded(child: Text(p.$1, style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface))),
+                  Text(p.$2, style: GoogleFonts.ibmPlexSansArabic(fontSize: 20, fontWeight: FontWeight.w900, color: colorScheme.primary)),
+                ]),
+              ),
+            ),
+          ),
+        )),
       ]),
     );
   }
