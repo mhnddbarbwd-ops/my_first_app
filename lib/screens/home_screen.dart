@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nafahat/main.dart'; // لاستيراد appKey
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
 
@@ -27,7 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _updateDateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
     // قراءة الثيم الحالي من التطبيق
-    _selectedTheme = appKey.currentState?.currentThemeMode ?? ThemeMode.system;
   }
 
   @override
@@ -55,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _changeTheme(ThemeMode mode) {
     setState(() => _selectedTheme = mode);
-    appKey.currentState?.toggleTheme(mode); // استدعاء toggleTheme من NafahatApp
   }
 
   @override
