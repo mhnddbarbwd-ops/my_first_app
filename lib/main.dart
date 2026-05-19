@@ -30,19 +30,15 @@ class NafahatApp extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
           titleTextStyle: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            fontSize: 22,
+            fontWeight: FontWeight.w900, fontSize: 22,
             color: const Color(0xFF1B5E20),
           ),
         ),
       ),
       darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
+        useMaterial3: true, brightness: Brightness.dark,
         colorSchemeSeed: const Color(0xFF1B5E20),
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
-          ThemeData.dark().textTheme,
-        ),
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme),
       ),
       home: const SplashScreen(),
     );
