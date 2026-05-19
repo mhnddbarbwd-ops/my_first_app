@@ -90,7 +90,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       ).timeout(const Duration(seconds: 10), onTimeout: () {
-        throw TimeoutException('تعذر تحديد الموقع في الوقت المحدد');
       });
 
       _locationName = 'موقعك الحالي';
