@@ -20,17 +20,17 @@ dependencies:
   hijri_date: ^1.1.0
   flutter_prayer_time_calculator: ^0.0.2
   geolocator: ^13.0.2
+  flutter_qiblah: ^3.2.0
+  sign_with_btn: ^1.1.0
+  dorar_hadith: ^0.4.0
+  firebase_auth: ^5.3.0
+  google_sign_in: ^7.2.0
+  cloud_firestore: ^5.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.13.1
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/app_icon.png"
 
 flutter:
   uses-material-design: true

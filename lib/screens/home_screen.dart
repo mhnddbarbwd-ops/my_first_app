@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nafahat/main.dart'; // لاستيراد appKey
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
@@ -19,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentTime = '';
   String _hijriDate = '';
   Timer? _timer;
-  ThemeMode _selectedTheme = ThemeMode.system;
 
   @override
   void initState() {
@@ -27,10 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
     HijriDate.setLocal('ar');
     _updateDateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
-    // قراءة الثيم الحالي من التطبيق
-    _selectedTheme = appKey.currentState?.widget != null
-        ? (appKey.currentState?.widget as dynamic).toString().contains('dark') ? ThemeMode.dark : ThemeMode.light
-        : ThemeMode.system;
   }
 
   @override
@@ -47,34 +42,22 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _changeTheme(ThemeMode mode) {
-    appKey.currentState?.toggleTheme(mode);
-    setState(() { _selectedTheme = mode; });
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('نفحات', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent, elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () => _changeTheme(ThemeMode.light),
-            icon: Icon(Icons.light_mode_rounded, color: _selectedTheme == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
-            tooltip: 'الوضع الفاتح',
-          ),
-          IconButton(
-            onPressed: () => _changeTheme(ThemeMode.system),
-            icon: Icon(Icons.settings_suggest_rounded, color: _selectedTheme == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
-            tooltip: 'يتبع النظام',
-          ),
-          IconButton(
-            onPressed: () => _changeTheme(ThemeMode.dark),
-            icon: Icon(Icons.dark_mode_rounded, color: _selectedTheme == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
-            tooltip: 'الوضع الليلي',
-          ),
+          if (user != null)
+            IconButton(
+              onPressed: () => FirebaseAuth.instance.signOut(),
+              icon: const Icon(Icons.logout_rounded, color: Colors.red),
+              tooltip: 'تسجيل الخروج',
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -124,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height:16),
             Row(children: [
-              Expanded(child: _buildBtn(Icons.mosque_rounded, 'مواقيت الصلاة', ()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const PrayerTimesScreen())))),
+              Expanded(child: _buildBtn(Icons.mosque_rounded, 'مواقيت + بوصلة', ()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const PrayerTimesScreen())))),
               const SizedBox(width:10),
               Expanded(child: _buildBtn(Icons.book_rounded, 'الأحاديث', ()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const HadithScreen())))),
             ]),

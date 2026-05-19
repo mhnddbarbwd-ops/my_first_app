@@ -2,39 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nafahat/screens/splash_screen.dart';
-
-// GlobalKey للوصول إلى NafahatAppState من أي مكان
-final GlobalKey<NafahatAppState> appKey = GlobalKey<NafahatAppState>();
+import 'package:nafahat/screens/onboarding_screen.dart';
+import 'package:nafahat/screens/login_screen.dart';
+import 'package:nafahat/screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   await initializeDateFormatting('ar', null);
   HijriDate.setLocal('ar');
-  runApp(NafahatApp(key: appKey));
+  runApp(const NafahatApp());
 }
 
-class NafahatApp extends StatefulWidget {
+class NafahatApp extends StatelessWidget {
   const NafahatApp({super.key});
-  @override
-  NafahatAppState createState() => NafahatAppState();
-}
-
-class NafahatAppState extends State<NafahatApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  void toggleTheme(ThemeMode mode) {
-    setState(() {
-      _themeMode = mode;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'نفحات',
-      themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
@@ -56,7 +46,30 @@ class NafahatAppState extends State<NafahatApp> {
         colorSchemeSeed: const Color(0xFF1B5E20),
         textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme),
       ),
-      home: const SplashScreen(),
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();
+        }
+        final user = snapshot.data;
+        if (user == null) {
+          // لم يسجل دخول → الصفحات الترحيبية ثم تسجيل الدخول
+          return const OnboardingScreen();
+        }
+        // مسجل الدخول → الشاشة الرئيسية
+        return const HomeScreen();
+      },
     );
   }
 }

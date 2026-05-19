@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nafahat/screens/home_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,15 +22,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      }
-    });
   }
 
   @override
@@ -50,8 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 120,
-                height: 120,
+                width: 120, height: 120,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(30),
@@ -64,26 +54,21 @@ class _SplashScreenState extends State<SplashScreen>
                   ],
                 ),
                 child: const Icon(
-                  Icons.menu_book_rounded,
-                  size: 60,
+                  Icons.menu_book_rounded, size: 60,
                   color: Color(0xFF1B5E20),
                 ),
               ),
               const SizedBox(height: 30),
-              const Text(
-                'نفحات',
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w900,
+              Text('نفحات',
+                style: GoogleFonts.ibmPlexSansArabic(
+                  fontSize: 48, fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'تطبيق القرآن الكريم',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white.withOpacity(0.8),
+              Text('تطبيق القرآن الكريم',
+                style: GoogleFonts.ibmPlexSansArabic(
+                  fontSize: 18, color: Colors.white.withOpacity(0.8),
                 ),
               ),
             ],
