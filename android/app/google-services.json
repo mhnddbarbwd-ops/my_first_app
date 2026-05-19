@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "97056173794",
-    "project_id": "fez-app-52360",
-    "storage_bucket": "fez-app-52360.firebasestorage.app"
+    "project_number": "115309904282",
+    "project_id": "nafahat-69101",
+    "storage_bucket": "nafahat-69101.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:97056173794:android:d6e5a99eb32119886838bb",
+        "mobilesdk_app_id": "1:115309904282:android:7be1948010ecce69af7a23",
         "android_client_info": {
           "package_name": "com.nafahat.quran"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD4Txj2En3ldZbgcHliHhlYeT0CezzaeXc"
+          "current_key": "AIzaSyBsV5O0myrCGZ-2dC14y3yNnoJIhy9MbXQ"
         }
       ],
       "services": {
