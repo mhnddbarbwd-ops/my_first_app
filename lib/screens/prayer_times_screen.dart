@@ -86,9 +86,9 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         return;
       }
 
-      // إضافة مهلة زمنية لطلب الموقع (10 ثوانٍ)
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
 
       _locationName = 'موقعك الحالي';
       _calculateTimes(position.latitude, position.longitude);
@@ -143,7 +143,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     );
   }
 
-  // مؤشر تحميل Shimmer حديث
   Widget _buildShimmerLoading(ColorScheme colorScheme) {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -296,10 +295,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // بطاقة الموقع
         _buildLocationCard(colorScheme),
         const SizedBox(height: 20),
-        // بطاقات المواقيت الزجاجية
         ...prayers.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _buildPrayerCard(p.$1, p.$2, p.$3, colorScheme),
