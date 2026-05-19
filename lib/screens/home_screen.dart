@@ -18,6 +18,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentTime = '';
   String _hijriDate = '';
   Timer? _timer;
+  // حالة الثيم الحالية (لتحديد الأيقونة النشطة)
+  ThemeMode _selectedTheme = ThemeMode.system;
 
   @override
   void initState() {
@@ -41,6 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // دالة تغيير الثيم (تستدعي toggleTheme من التطبيق الرئيسي)
+  void _changeTheme(ThemeMode mode) {
+    final appState = context.findAncestorStateOfType<State>();
+    if (appState is dynamic) {
+      (appState as dynamic).toggleTheme(mode);
+    }
+    setState(() { _selectedTheme = mode; });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -48,6 +59,27 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('نفحات', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent, elevation: 0,
+        // هنا الأزرار الثلاثة
+        actions: [
+          IconButton(
+            onPressed: () => _changeTheme(ThemeMode.light),
+            icon: Icon(Icons.light_mode_rounded,
+                color: _selectedTheme == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
+            tooltip: 'الوضع الفاتح',
+          ),
+          IconButton(
+            onPressed: () => _changeTheme(ThemeMode.system),
+            icon: Icon(Icons.settings_suggest_rounded,
+                color: _selectedTheme == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
+            tooltip: 'يتبع النظام',
+          ),
+          IconButton(
+            onPressed: () => _changeTheme(ThemeMode.dark),
+            icon: Icon(Icons.dark_mode_rounded,
+                color: _selectedTheme == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
+            tooltip: 'الوضع الليلي',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
