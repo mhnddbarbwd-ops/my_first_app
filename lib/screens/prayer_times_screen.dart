@@ -89,8 +89,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       // إضافة مهلة زمنية لطلب الموقع (10 ثوانٍ)
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-      ).timeout(const Duration(seconds: 10), onTimeout: () {
-      });
 
       _locationName = 'موقعك الحالي';
       _calculateTimes(position.latitude, position.longitude);
