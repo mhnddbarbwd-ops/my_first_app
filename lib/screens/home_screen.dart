@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:nafahat/main.dart'; // لاستيراد appKey
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
@@ -18,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentTime = '';
   String _hijriDate = '';
   Timer? _timer;
-  // حالة الثيم الحالية (لتحديد الأيقونة النشطة)
   ThemeMode _selectedTheme = ThemeMode.system;
 
   @override
@@ -27,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
     HijriDate.setLocal('ar');
     _updateDateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
+    // قراءة الثيم الحالي من التطبيق
+    _selectedTheme = appKey.currentState?.widget != null
+        ? (appKey.currentState?.widget as dynamic).toString().contains('dark') ? ThemeMode.dark : ThemeMode.light
+        : ThemeMode.system;
   }
 
   @override
@@ -43,12 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // دالة تغيير الثيم (تستدعي toggleTheme من التطبيق الرئيسي)
   void _changeTheme(ThemeMode mode) {
-    final appState = context.findAncestorStateOfType<State>();
-    if (appState is dynamic) {
-      (appState as dynamic).toggleTheme(mode);
-    }
+    appKey.currentState?.toggleTheme(mode);
     setState(() { _selectedTheme = mode; });
   }
 
@@ -59,24 +59,20 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('نفحات', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent, elevation: 0,
-        // هنا الأزرار الثلاثة
         actions: [
           IconButton(
             onPressed: () => _changeTheme(ThemeMode.light),
-            icon: Icon(Icons.light_mode_rounded,
-                color: _selectedTheme == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
+            icon: Icon(Icons.light_mode_rounded, color: _selectedTheme == ThemeMode.light ? Colors.amber : colorScheme.onSurface.withOpacity(0.4)),
             tooltip: 'الوضع الفاتح',
           ),
           IconButton(
             onPressed: () => _changeTheme(ThemeMode.system),
-            icon: Icon(Icons.settings_suggest_rounded,
-                color: _selectedTheme == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
+            icon: Icon(Icons.settings_suggest_rounded, color: _selectedTheme == ThemeMode.system ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4)),
             tooltip: 'يتبع النظام',
           ),
           IconButton(
             onPressed: () => _changeTheme(ThemeMode.dark),
-            icon: Icon(Icons.dark_mode_rounded,
-                color: _selectedTheme == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
+            icon: Icon(Icons.dark_mode_rounded, color: _selectedTheme == ThemeMode.dark ? Colors.indigo : colorScheme.onSurface.withOpacity(0.4)),
             tooltip: 'الوضع الليلي',
           ),
         ],
