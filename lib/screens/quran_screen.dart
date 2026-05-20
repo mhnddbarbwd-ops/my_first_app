@@ -52,7 +52,7 @@ class _QuranScreenState extends State<QuranScreen> {
     });
 
     try {
-      final results = searchWords([query.trim()]);
+      final results = searchWords(query.trim());
       if (results['result'] != null && (results['result'] as List).isNotEmpty) {
         final firstMatch = results['result'][0];
         final surah = firstMatch['suraNumber'] as int;
