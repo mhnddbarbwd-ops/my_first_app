@@ -15,10 +15,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         applicationId = "com.nafahat.quran"
         minSdk = 26
@@ -27,7 +23,6 @@ android {
         versionName = flutter.versionName
     }
 
-    // تكوين التوقيع لجميع البناءات (Debug و Release)
     signingConfigs {
         create("release") {
             storeFile = file("nafahat-release.keystore")
