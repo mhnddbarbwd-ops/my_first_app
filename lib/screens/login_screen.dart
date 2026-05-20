@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -39,9 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = _getArabicMessage(e.code);
       });
+    } on PlatformException catch (e) {
+      setState(() {
+        _errorMessage = 'خطأ في النظام: ${e.message ?? e.code}';
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = 'حدث خطأ غير متوقع';
+        _errorMessage = 'حدث خطأ غير متوقع:\n$e';
       });
     }
     if (mounted) setState(() => _isLoading = false);
@@ -53,17 +58,30 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
     try {
-      // Google Sign-In v6 API
       final GoogleSignIn googleSignIn = GoogleSignIn();
+      
+      // محاولة تسجيل الدخول
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
-        if (mounted) setState(() => _isLoading = false);
+        setState(() {
+          _errorMessage = 'تم إلغاء تسجيل الدخول';
+          _isLoading = false;
+        });
         return;
       }
 
+      // الحصول على بيانات المصادقة
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
+        setState(() {
+          _errorMessage = 'فشل في الحصول على رمز المصادقة من Google';
+          _isLoading = false;
+        });
+        return;
+      }
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -73,11 +91,15 @@ class _LoginScreenState extends State<LoginScreen> {
       await FirebaseAuth.instance.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = _getArabicMessage(e.code);
+        _errorMessage = 'خطأ Firebase: ${_getArabicMessage(e.code)}\n(${e.code})';
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        _errorMessage = 'خطأ Google Sign-In:\n${e.message ?? e.code}';
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'حدث خطأ غير متوقع';
+        _errorMessage = 'حدث خطأ غير متوقع:\n$e';
       });
     }
     if (mounted) setState(() => _isLoading = false);
@@ -99,8 +121,14 @@ class _LoginScreenState extends State<LoginScreen> {
         return 'كلمة المرور ضعيفة جداً';
       case 'invalid-credential':
         return 'بيانات الدخول غير صحيحة';
+      case 'network-request-failed':
+        return 'فشل الاتصال بالإنترنت';
+      case 'operation-not-allowed':
+        return 'تسجيل الدخول بـ Google غير مفعّل في Firebase';
+      case 'account-exists-with-different-credential':
+        return 'يوجد حساب آخر بنفس البريد الإلكتروني';
       default:
-        return 'حدث خطأ: $code';
+        return 'خطأ: $code';
     }
   }
 
