@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nafahat/main.dart'; // لاستيراد themeNotifier
+import 'package:nafahat/main.dart';
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
@@ -56,114 +56,146 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
         title: Text(
           'نَـفَـحَـات',
           style: GoogleFonts.ibmPlexSansArabic(
             fontWeight: FontWeight.w900,
             fontSize: 28,
             letterSpacing: 1.2,
-            color: colorScheme.primary,
+            color: isDark ? colorScheme.primary : colorScheme.onPrimary,
           ),
         ),
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDark ? colorScheme.primary : colorScheme.onPrimary,
+        ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // قسم أزرار التحكم بالثيم الثلاثية الاحترافية
-              Text(
-                'مظهر التطبيق',
-                style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildThemeSelector(context),
-              const SizedBox(height: 24),
-              
-              _buildDateTimeCard(colorScheme, isDark),
-              const SizedBox(height: 32),
-              Text(
-                'الخدمات والمميزات الإسلامية',
-                style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 0.95,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [colorScheme.surface, colorScheme.background]
+                : [colorScheme.primary.withOpacity(0.1), colorScheme.surface],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildMainButton(
-                    icon: Icons.menu_book_rounded,
-                    label: 'القرآن الكريم',
-                    subtitle: 'تصفح وتدبر وبحث',
-                    gradientColors: const [Color(0xFF0B3C18), Color(0xFF1B5E20)],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
+                  // لوحة التحكم بالثيمات الثلاثية المخصصة الاحترافية
+                  Text(
+                    'مظهر التطبيق الديناميكي',
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.secondary,
+                    ),
                   ),
-                  _buildMainButton(
-                    icon: Icons.mosque_rounded,
-                    label: 'مواقيت ومؤشرات',
-                    subtitle: 'الصلاة والموقع الفعلي',
-                    gradientColors: const [Color(0xFFC5A880), Color(0xFF9E7E50)],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
+                  const SizedBox(height: 12),
+                  _buildThemeSwitcherControl(context, colorScheme, isDark),
+                  const SizedBox(height: 28),
+
+                  _buildModernDateTimeCard(colorScheme, isDark),
+                  const SizedBox(height: 32),
+
+                  Text(
+                    'الخدمات الإسلامية الفاخرة',
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? colorScheme.primary : colorScheme.onSurface,
+                    ),
                   ),
-                  _buildMainButton(
-                    icon: Icons.book_rounded,
-                    label: 'الأحاديث النبوية',
-                    subtitle: 'الأربعين النووية كاملة',
-                    gradientColors: const [Color(0xFF114B43), Color(0xFF004D40)],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
+                  const SizedBox(height: 16),
+
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.92,
+                    crossAxisSpacing: 18,
+                    mainAxisSpacing: 18,
+                    children: [
+                      _buildMenuCard(
+                        icon: Icons.menu_book_rounded,
+                        label: 'القرآن الكريم',
+                        subtitle: 'تصفح، فهرس وبحث ذكي',
+                        colors: isDark
+                            ? [colorScheme.primary.withOpacity(0.8), colorScheme.primary]
+                            : [const Color(0xFF0B3C18), const Color(0xFF1B5E20)],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.location_on_rounded,
+                        label: 'مواقيت الصلاة',
+                        subtitle: 'تحديد الموقع الحي والتوقيت',
+                        colors: isDark
+                            ? [colorScheme.secondary.withOpacity(0.8), colorScheme.secondary]
+                            : [const Color(0xFFC5A880), const Color(0xFF9E7E50)],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.auto_stories_rounded,
+                        label: 'الأحاديث النبوية',
+                        subtitle: 'الأربعين النووية بالشرح كاملة',
+                        colors: isDark
+                            ? [const Color(0xFF114B43), const Color(0xFF004D40)]
+                            : [const Color(0xFF114B43), const Color(0xFF004D40)],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.fingerprint_rounded,
+                        label: 'المسبحة الذكية',
+                        subtitle: 'عداد الأذكار المطور المرن',
+                        colors: isDark
+                            ? [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)]
+                            : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
+                      ),
+                    ],
                   ),
-                  _buildMainButton(
-                    icon: Icons.fingerprint_rounded,
-                    label: 'المسبحة الذكية',
-                    subtitle: 'عداد الأذكار المطور',
-                    gradientColors: const [Color(0xFF2E5B3E), Color(0xFF1E3D29)],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
-                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
-              const SizedBox(height: 30),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildThemeSelector(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildThemeSwitcherControl(BuildContext context, ColorScheme colorScheme, bool isDark) {
     return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (_, currentMode, __) {
+      valueListenable: appThemeNotifier,
+      builder: (context, currentMode, child) {
         return Container(
           decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+            color: isDark ? colorScheme.surface.withOpacity(0.5) : colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              )
+            ],
+            border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
           ),
           padding: const EdgeInsets.all(6),
           child: Row(
             children: [
-              _buildThemeOption(ThemeMode.light, Icons.wb_sunny_rounded, 'فاتح', currentMode, colorScheme),
-              _buildThemeOption(ThemeMode.dark, Icons.nightlight_round, 'مظلم', currentMode, colorScheme),
-              _buildThemeOption(ThemeMode.system, Icons.settings_suggest_rounded, 'تلقائي', currentMode, colorScheme),
+              _buildThemeItem(ThemeMode.light, Icons.wb_sunny_rounded, 'فاتح', currentMode, colorScheme),
+              _buildThemeItem(ThemeMode.dark, Icons.dark_mode_rounded, 'مظلم', currentMode, colorScheme),
+              _buildThemeItem(ThemeMode.system, Icons.hdr_auto_rounded, 'تلقائي', currentMode, colorScheme),
             ],
           ),
         );
@@ -171,28 +203,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildThemeOption(ThemeMode mode, IconData icon, String label, ThemeMode currentMode, ColorScheme colorScheme) {
+  Widget _buildThemeItem(ThemeMode mode, IconData icon, String label, ThemeMode currentMode, ColorScheme colorScheme) {
     final isSelected = currentMode == mode;
     return Expanded(
       child: GestureDetector(
-        onTap: () => themeNotifier.value = mode,
+        onTap: () => appThemeNotifier.value = mode,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.fastOutSlowIn,
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
-          child: Column(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6), size: 20),
-              const SizedBox(height: 4),
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
               Text(
                 label,
                 style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                   color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
@@ -203,39 +240,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDateTimeCard(ColorScheme colorScheme, bool isDark) {
+  Widget _buildModernDateTimeCard(ColorScheme colorScheme, bool isDark) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         gradient: LinearGradient(
           colors: isDark
-              ? [colorScheme.surface, colorScheme.surface.withOpacity(0.7)]
-              : [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
+              ? [colorScheme.surface, colorScheme.surface.withOpacity(0.8)]
+              : [colorScheme.primary, colorScheme.primary.withOpacity(0.88)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.15),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
+            color: colorScheme.primary.withOpacity(isDark ? 0.4 : 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Stack(
         children: [
           Positioned(
-            left: -20,
-            top: -20,
+            left: -30,
+            top: -30,
             child: Icon(
               Icons.mosque_rounded,
-              size: 150,
-              color: (isDark ? colorScheme.primary : Colors.white).withOpacity(0.05),
+              size: 180,
+              color: (isDark ? colorScheme.primary : Colors.white).withOpacity(0.04),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.all(30),
             child: Column(
               children: [
                 Row(
@@ -243,47 +280,47 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded, size: 18, color: isDark ? colorScheme.primary : colorScheme.secondary),
+                        Icon(Icons.location_on_rounded, size: 18, color: colorScheme.secondary),
                         const SizedBox(width: 6),
                         Text(
-                          'توقيت مكة المكرمة',
+                          'توقيت مكة المكرمة الأوتوماتيكي',
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                             color: isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.white70,
                           ),
                         ),
                       ],
                     ),
-                    Icon(Icons.access_time_filled_rounded, color: isDark ? colorScheme.primary : colorScheme.secondary),
+                    Icon(Icons.av_timer_rounded, color: colorScheme.secondary),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Text(
                   _currentTime,
                   style: GoogleFonts.ibmPlexSansArabic(
-                    fontSize: 36,
+                    fontSize: 34,
                     fontWeight: FontWeight.w900,
                     color: isDark ? colorScheme.primary : Colors.white,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.black12 : Colors.black26,
-                    borderRadius: BorderRadius.circular(20),
+                    color: isDark ? Colors.black26 : Colors.black38,
+                    borderRadius: BorderRadius.circular(22),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.calendar_today_rounded, size: 18, color: isDark ? colorScheme.primary : colorScheme.secondary),
+                      Icon(Icons.calendar_month_rounded, size: 18, color: colorScheme.secondary),
                       const SizedBox(width: 10),
                       Text(
                         _hijriDate,
                         style: TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           color: isDark ? colorScheme.onSurface : Colors.white,
                         ),
                       ),
@@ -298,19 +335,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMainButton({
+  Widget _buildMenuCard({
     required IconData icon,
     required String label,
     required String subtitle,
-    required List<Color> gradientColors,
+    required List<Color> colors,
     required VoidCallback onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         boxShadow: [
-          BoxShadow(color: gradientColors[0].withOpacity(0.3), blurRadius: 14, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: colors[0].withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Material(
@@ -319,23 +360,37 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(28),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                   child: Icon(icon, color: Colors.white, size: 28),
                 ),
                 const Spacer(),
                 Text(
                   label,
-                  style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                  style: GoogleFonts.ibmPlexSansArabic(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7))),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.75),
+                    height: 1.3,
+                  ),
+                ),
               ],
             ),
           ),
