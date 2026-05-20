@@ -16,9 +16,7 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/nafahat-release.keystore
       - name: Create Service Account JSON
-        run: cat > service-account.json << 'EOFJSON'
-        ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        EOFJSON
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > service-account.json
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
         with:
