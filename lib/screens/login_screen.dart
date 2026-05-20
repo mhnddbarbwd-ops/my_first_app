@@ -53,18 +53,23 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
     try {
-      // Google Sign-In v7: استبدال standard() و signIn() بـ instance و authenticate()
-      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
-      
-      // الحصول على رمز الوصول (Access Token) - جديد في الإصدار 7
-      final clientAuth = await googleUser.authorizationClient.authorizeScopes(['email', 'profile']);
-      
-      // إنشاء بيانات الاعتماد
+      // Google Sign-In v6 API
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
       final credential = GoogleAuthProvider.credential(
-        idToken: googleUser.authentication.idToken,
-        accessToken: clientAuth.accessToken,
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
       );
-      
+
       await FirebaseAuth.instance.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       setState(() {
