@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    // id("kotlin-android") ← تم حذفه (Kotlin أصبحت مدمجة في AGP 9)
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
@@ -16,7 +16,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // تم حذف kotlinOptions بالكامل
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
 
     defaultConfig {
         applicationId = "com.nafahat.quran"
