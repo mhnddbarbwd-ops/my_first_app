@@ -8,7 +8,7 @@ import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
-import 'package:nafahat/screens/himam_hub_screen.dart';  // 🆕 استيراد مركز هِمَمْ
+import 'package:nafahat/screens/himam_hub_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -92,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // لوحة التحكم بالثيمات الثلاثية المخصصة الاحترافية
                   Text(
                     'مظهر التطبيق الديناميكي',
                     style: GoogleFonts.ibmPlexSansArabic(
@@ -162,7 +161,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
                       ),
-                      // 🆕 بطاقة هِمَمْ - مركز التحديات والاختبارات
                       _buildMenuCard(
                         icon: Icons.emoji_events_rounded,
                         label: 'هِمَمْ',

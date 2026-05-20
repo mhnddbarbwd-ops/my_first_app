@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 
 class QuranScreen extends StatefulWidget {
@@ -15,7 +16,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   late TabController _searchTabController;
   int _currentPage = 1;
 
-  // نتائج البحث
   List<Map<String, dynamic>> _surahResults = [];
   List<Map<String, dynamic>> _ayahResults = [];
 
@@ -45,7 +45,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     setState(() => _currentPage = page);
   }
 
-  // البحث التلقائي عند الكتابة
   void _onSearchChanged(String query) {
     if (query.trim().isEmpty) {
       setState(() {
@@ -56,7 +55,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     }
 
     setState(() {
-      // البحث عن السور
       _surahResults = [];
       for (int i = 1; i <= 114; i++) {
         final name = getSurahNameArabic(i);
@@ -65,7 +63,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         }
       }
 
-      // البحث في الآيات
       try {
         final results = searchWords(query.trim());
         if (results['result'] != null && (results['result'] as List).isNotEmpty) {
@@ -127,7 +124,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                     child: TabBarView(
                       controller: _searchTabController,
                       children: [
-                        // تبويب السور
                         _surahResults.isEmpty
                             ? Center(child: Text('اكتب للبحث عن سورة', style: TextStyle(color: Colors.grey)))
                             : ListView.builder(
@@ -148,7 +144,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                                   );
                                 },
                               ),
-                        // تبويب الآيات
                         _ayahResults.isEmpty
                             ? Center(child: Text('اكتب للبحث في الآيات', style: TextStyle(color: Colors.grey)))
                             : ListView.builder(
@@ -200,6 +195,14 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.flag_rounded, color: colorScheme.primary),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => QuranChallengeScreen(initialPage: _currentPage)),
+            ),
+            tooltip: 'بدء تحدي جديد',
+          ),
+          IconButton(
             icon: Icon(Icons.search_rounded, color: colorScheme.primary),
             onPressed: _showSearchDialog,
           ),
@@ -228,7 +231,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               itemCount: 114,
               itemBuilder: (context, index) {
                 final surahNumber = index + 1;
-                final page = getPageNumber(surahNumber, 1); // الصفحة الأولى من السورة
+                final page = getPageNumber(surahNumber, 1);
                 final name = getSurahNameArabic(surahNumber);
                 return ListTile(
                   leading: CircleAvatar(
