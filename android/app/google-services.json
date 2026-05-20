@@ -12,7 +12,20 @@
           "package_name": "com.nafahat.quran"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "115309904282-6catb9arlp1g08lg3rafp6djhdfi4iqm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nafahat.quran",
+            "certificate_hash": "aff81882ac85d083e9977c11b297fa56acbb9e70"
+          }
+        },
+        {
+          "client_id": "115309904282-b1kr5rtakjfop8viv4mk8hm6agpkn652.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBsV5O0myrCGZ-2dC14y3yNnoJIhy9MbXQ"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "115309904282-b1kr5rtakjfop8viv4mk8hm6agpkn652.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
