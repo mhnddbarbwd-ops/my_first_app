@@ -53,16 +53,18 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.standard().signIn();
-      if (googleUser == null) {
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      // Google Sign-In v7: استبدال standard() و signIn() بـ instance و authenticate()
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
+      
+      // الحصول على رمز الوصول (Access Token) - جديد في الإصدار 7
+      final clientAuth = await googleUser.authorizationClient.authorizeScopes(['email', 'profile']);
+      
+      // إنشاء بيانات الاعتماد
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        idToken: googleUser.authentication.idToken,
+        accessToken: clientAuth.accessToken,
       );
+      
       await FirebaseAuth.instance.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -118,7 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              // شعار التطبيق
               Center(
                 child: Container(
                   width: 90,
@@ -159,7 +160,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 36),
-              // رسالة الخطأ
               if (_errorMessage != null)
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -175,7 +175,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-              // حقل الاسم (لإنشاء الحساب فقط)
               if (!_isLogin) ...[
                 _buildTextField(
                   controller: _nameController,
@@ -184,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 14),
               ],
-              // حقل البريد الإلكتروني
               _buildTextField(
                 controller: _emailController,
                 hint: 'البريد الإلكتروني',
@@ -192,7 +190,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 14),
-              // حقل كلمة المرور
               _buildTextField(
                 controller: _passwordController,
                 hint: 'كلمة المرور',
@@ -200,7 +197,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 isPassword: true,
               ),
               const SizedBox(height: 24),
-              // زر تسجيل الدخول / إنشاء حساب
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -231,7 +227,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // فاصل "أو"
               Row(
                 children: [
                   Expanded(
@@ -253,7 +248,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              // زر Google
               SizedBox(
                 height: 56,
                 child: OutlinedButton(
@@ -289,7 +283,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              // تبديل تسجيل الدخول / إنشاء حساب
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

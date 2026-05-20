@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nafahat/screens/splash_screen.dart';
 import 'package:nafahat/screens/onboarding_screen.dart';
 import 'package:nafahat/screens/login_screen.dart';
@@ -12,6 +13,8 @@ import 'package:nafahat/screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  // تهيئة Google Sign In (جديد في الإصدار 7)
+  await GoogleSignIn.instance.initialize();
   await initializeDateFormatting('ar', null);
   HijriDate.setLocal('ar');
   runApp(const NafahatApp());
@@ -35,7 +38,6 @@ class _NafahatAppState extends State<NafahatApp> {
 
   @override
   Widget build(BuildContext context) {
-    // تعريف الألوان يدويًا للتحكم الكامل في التباين
     const Color seedColor = Color(0xFF1B5E20);
     const Color lightSurface = Color(0xFFF5F0E8);
     const Color darkSurface = Color(0xFF1A1A1A);

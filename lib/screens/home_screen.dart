@@ -8,6 +8,7 @@ import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
+import 'package:nafahat/screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -69,11 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          // زر الملف الشخصي
           if (user != null)
             IconButton(
-              onPressed: () => FirebaseAuth.instance.signOut(),
-              icon: Icon(Icons.logout_rounded, color: colorScheme.error),
-              tooltip: 'تسجيل الخروج',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
+              icon: Icon(Icons.account_circle_rounded, color: colorScheme.primary, size: 30),
+              tooltip: 'الملف الشخصي',
             ),
         ],
       ),
@@ -82,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             const SizedBox(height: 10),
-            // بطاقة الوقت والتاريخ الرئيسية
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -110,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Column(
                 children: [
-                  // أيقونة الساعة
                   Container(
                     width: 50,
                     height: 50,
@@ -125,7 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // الوقت
                   Text(
                     _currentTime,
                     style: TextStyle(
@@ -146,7 +148,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 14),
                   Divider(color: colorScheme.primary.withOpacity(0.2)),
                   const SizedBox(height: 14),
-                  // التاريخ الهجري
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -170,7 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            // الأزرار الرئيسية
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
