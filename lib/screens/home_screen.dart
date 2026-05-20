@@ -8,7 +8,7 @@ import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
-import 'package:nafahat/screens/goals_screen.dart';  // 🆕 استيراد صفحة التحديات
+import 'package:nafahat/screens/himam_hub_screen.dart';  // 🆕 استيراد مركز هِمَمْ
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -162,15 +162,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
                       ),
-                      // 🆕 بطاقة تحدي ختم القرآن
+                      // 🆕 بطاقة هِمَمْ - مركز التحديات والاختبارات
                       _buildMenuCard(
-                        icon: Icons.flag_rounded,
-                        label: 'تحدي ختم القرآن',
-                        subtitle: 'حدد هدفك وتابع إنجازك',
+                        icon: Icons.emoji_events_rounded,
+                        label: 'هِمَمْ',
+                        subtitle: 'تحديات، اختبارات، أوسمة',
                         colors: isDark
-                            ? [const Color(0xFF3D5A5C), const Color(0xFF1F3A3C)]
-                            : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GoalsScreen())),
+                            ? [const Color(0xFF5C3D6E), const Color(0xFF3C1F4A)]
+                            : [const Color(0xFF6A1B9A), const Color(0xFF4A148C)],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamHubScreen())),
                       ),
                     ],
                   ),

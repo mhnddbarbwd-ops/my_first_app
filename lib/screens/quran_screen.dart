@@ -9,14 +9,18 @@ class QuranScreen extends StatefulWidget {
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
-class _QuranScreenState extends State<QuranScreen> {
+class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  late TabController _searchTabController;
   int _currentPage = 1;
 
-  // الصفحات الأولى لكل جزء
+  // نتائج البحث
+  List<Map<String, dynamic>> _surahResults = [];
+  List<Map<String, dynamic>> _ayahResults = [];
+
   static const Map<int, int> _juzStartPages = {
-    1: 1,   2: 22,  3: 42,  4: 62,  5: 82,  6: 102,
+    1: 1, 2: 22, 3: 42, 4: 62, 5: 82, 6: 102,
     7: 121, 8: 142, 9: 162, 10: 182, 11: 201, 12: 222,
     13: 242, 14: 262, 15: 282, 16: 302, 17: 322, 18: 342,
     19: 362, 20: 382, 21: 402, 22: 422, 23: 442, 24: 462,
@@ -24,51 +28,158 @@ class _QuranScreenState extends State<QuranScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    _searchTabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _searchTabController.dispose();
     super.dispose();
   }
 
   void _jumpToPage(int page) {
-    Navigator.pop(context);
+    if (Navigator.canPop(context)) Navigator.pop(context);
     setState(() => _currentPage = page);
   }
 
+  // البحث التلقائي عند الكتابة
+  void _onSearchChanged(String query) {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _surahResults = [];
+        _ayahResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      // البحث عن السور
+      _surahResults = [];
+      for (int i = 1; i <= 114; i++) {
+        final name = getSurahNameArabic(i);
+        if (name.contains(query.trim())) {
+          _surahResults.add({'number': i, 'name': name, 'page': getPageNumber(i, 1)});
+        }
+      }
+
+      // البحث في الآيات
+      try {
+        final results = searchWords(query.trim());
+        if (results['result'] != null && (results['result'] as List).isNotEmpty) {
+          _ayahResults = (results['result'] as List).map<Map<String, dynamic>>((r) {
+            final surah = r['suraNumber'] as int;
+            final verse = r['verseNumber'] as int;
+            final page = getPageNumber(surah, verse);
+            return {
+              'surah': surah,
+              'verse': verse,
+              'page': page,
+              'surahName': getSurahNameArabic(surah),
+            };
+          }).toList();
+        }
+      } catch (_) {
+        _ayahResults = [];
+      }
+    });
+  }
+
   void _showSearchDialog() {
+    _searchController.clear();
+    _surahResults = [];
+    _ayahResults = [];
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('بحث في القرآن', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
-        content: TextField(
-          controller: _searchController,
-          textDirection: TextDirection.rtl,
-          decoration: InputDecoration(
-            hintText: 'اكتب كلمة أو آية للبحث...',
-            prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () {
-              if (_searchController.text.trim().isNotEmpty) {
-                try {
-                  // تم إصلاح الخطأ: searchWords تقبل String وليس List
-                  final results = searchWords(_searchController.text.trim());
-                  if (results['result'] != null && (results['result'] as List).isNotEmpty) {
-                    final firstMatch = results['result'][0];
-                    final surah = firstMatch['suraNumber'] as int;
-                    final verse = firstMatch['verseNumber'] as int;
-                    final page = getPageNumber(surah, verse);
-                    Navigator.pop(ctx);
-                    setState(() => _currentPage = page);
-                  }
-                } catch (_) {}
-              }
-            },
-            child: const Text('بحث'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: Text('بحث في القرآن', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    textDirection: TextDirection.rtl,
+                    onChanged: (v) {
+                      _onSearchChanged(v);
+                      setDialogState(() {});
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'اكتب كلمة أو حرف للبحث...',
+                      prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TabBar(
+                    controller: _searchTabController,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    tabs: const [
+                      Tab(text: 'السور'),
+                      Tab(text: 'الآيات'),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _searchTabController,
+                      children: [
+                        // تبويب السور
+                        _surahResults.isEmpty
+                            ? Center(child: Text('اكتب للبحث عن سورة', style: TextStyle(color: Colors.grey)))
+                            : ListView.builder(
+                                itemCount: _surahResults.length,
+                                itemBuilder: (context, i) {
+                                  final s = _surahResults[i];
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                      child: Text('${s['number']}'),
+                                    ),
+                                    title: Text(s['name'], style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
+                                    subtitle: Text('الصفحة: ${s['page']}'),
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      _jumpToPage(s['page'] as int);
+                                    },
+                                  );
+                                },
+                              ),
+                        // تبويب الآيات
+                        _ayahResults.isEmpty
+                            ? Center(child: Text('اكتب للبحث في الآيات', style: TextStyle(color: Colors.grey)))
+                            : ListView.builder(
+                                itemCount: _ayahResults.length,
+                                itemBuilder: (context, i) {
+                                  final a = _ayahResults[i];
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                                      child: Text('${a['surah']}'),
+                                    ),
+                                    title: Text('سورة ${a['surahName']} - آية ${a['verse']}'),
+                                    subtitle: Text('الصفحة: ${a['page']}'),
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      _jumpToPage(a['page'] as int);
+                                    },
+                                  );
+                                },
+                              ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
+            ],
+          );
+        },
       ),
     );
   }
@@ -80,13 +191,7 @@ class _QuranScreenState extends State<QuranScreen> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(
-          'القرآن الكريم',
-          style: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            color: colorScheme.primary,
-          ),
-        ),
+        title: Text('القرآن الكريم', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900, color: colorScheme.primary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -103,92 +208,42 @@ class _QuranScreenState extends State<QuranScreen> {
       drawer: _buildNavigationDrawer(colorScheme),
       body: PageviewQuran(
         initialPageNumber: _currentPage,
-        onPageChanged: (page) {
-          setState(() => _currentPage = page);
-        },
+        onPageChanged: (page) => setState(() => _currentPage = page),
       ),
     );
   }
 
   Widget _buildNavigationDrawer(ColorScheme colorScheme) {
     return Drawer(
-      child: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
-              ),
-              child: Center(
-                child: Text(
-                  'فهرس المصحف',
-                  style: GoogleFonts.ibmPlexSansArabic(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: colorScheme.primary,
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1)),
+            child: Center(
+              child: Text('فهرس المصحف', style: GoogleFonts.ibmPlexSansArabic(fontSize: 22, fontWeight: FontWeight.w900, color: colorScheme.primary)),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: 114,
+              itemBuilder: (context, index) {
+                final surahNumber = index + 1;
+                final page = getPageNumber(surahNumber, 1); // الصفحة الأولى من السورة
+                final name = getSurahNameArabic(surahNumber);
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: colorScheme.primary.withOpacity(0.1),
+                    child: Text('$surahNumber', style: TextStyle(color: colorScheme.primary)),
                   ),
-                ),
-              ),
+                  title: Text(name, style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
+                  subtitle: Text('الصفحة: $page'),
+                  onTap: () => _jumpToPage(page),
+                );
+              },
             ),
-            TabBar(
-              labelColor: colorScheme.primary,
-              unselectedLabelColor: colorScheme.onSurface.withOpacity(0.5),
-              tabs: const [
-                Tab(text: 'السور'),
-                Tab(text: 'الأجزاء'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildSurahList(colorScheme),
-                  _buildJuzList(colorScheme),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildSurahList(ColorScheme colorScheme) {
-    return ListView.builder(
-      itemCount: 114,
-      itemBuilder: (context, index) {
-        final surahNumber = index + 1;
-        final page = getPageNumber(surahNumber, 1);
-        final name = getSurahNameArabic(surahNumber);
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: colorScheme.primary.withOpacity(0.1),
-            child: Text('$surahNumber', style: TextStyle(color: colorScheme.primary)),
-          ),
-          title: Text(name, style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
-          subtitle: Text('الصفحة: $page'),
-          onTap: () => _jumpToPage(page),
-        );
-      },
-    );
-  }
-
-  Widget _buildJuzList(ColorScheme colorScheme) {
-    return ListView.builder(
-      itemCount: 30,
-      itemBuilder: (context, index) {
-        final juzNumber = index + 1;
-        final page = _juzStartPages[juzNumber] ?? 1;
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: colorScheme.secondary.withOpacity(0.1),
-            child: Text('$juzNumber', style: TextStyle(color: colorScheme.secondary)),
-          ),
-          title: Text('الجزء $juzNumber', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
-          subtitle: Text('الصفحة: $page'),
-          onTap: () => _jumpToPage(page),
-        );
-      },
     );
   }
 }
