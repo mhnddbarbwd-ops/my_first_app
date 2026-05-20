@@ -1,73 +1,106 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:my_first_app/models/user_activity.dart';
-import 'package:my_first_app/models/user_profile.dart';
-import 'package:my_first_app/screens/dashboard_screen.dart'; // <-- تغيير هنا
-import 'package:my_first_app/theme/app_theme.dart';
-import 'package:my_first_app/services/notification_service.dart';
-import 'package:my_first_app/services/alarm_service.dart';
-import 'package:my_first_app/services/database_service.dart';
-import 'package:my_first_app/services/pedometer_service.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:hijri_date/hijri_date.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:nafahat/screens/splash_screen.dart';
+import 'package:nafahat/screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await Hive.initFlutter();
-  Hive.registerAdapter(UserActivityAdapter());
-  Hive.registerAdapter(UserProfileAdapter());
-  await Hive.openBox<UserProfile>('profileBox');
-  await Hive.openBox('settingsBox');
-  await DatabaseService().init();
-  await NotificationService().init();
-  PedometerService().startListening();
-  runApp(const FezApp());
+  await initializeDateFormatting('ar', null);
+  HijriDate.setLocal('ar');
+  runApp(const NafahatApp());
 }
 
-class FezApp extends StatefulWidget {
-  const FezApp({super.key});
+class NafahatApp extends StatefulWidget {
+  const NafahatApp({super.key});
 
   @override
-  State<FezApp> createState() => _FezAppState();
+  State<NafahatApp> createState() => _NafahatAppState();
 }
 
-class _FezAppState extends State<FezApp> {
+class _NafahatAppState extends State<NafahatApp> {
   ThemeMode _themeMode = ThemeMode.system;
-  String _language = 'ar';
 
-  void toggleTheme() {
+  void toggleTheme(ThemeMode mode) {
     setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
-
-  void toggleLanguage() {
-    setState(() {
-      _language = _language == 'ar' ? 'en' : 'ar';
+      _themeMode = mode;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AlarmService(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'فِـز',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: _themeMode,
-        locale: Locale(_language),
-        supportedLocales: const [Locale('ar'), Locale('en')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: DashboardScreen(), // <-- تغيير هنا
+    const Color seedColor = Color(0xFF1B5E20);
+    const Color lightSurface = Color(0xFFF5F0E8);
+    const Color darkSurface = Color(0xFF1A1A1A);
+    const Color darkBackground = Color(0xFF121212);
+
+    final lightColorScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: Brightness.light,
+      surface: lightSurface,
+    );
+
+    final darkColorScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: Brightness.dark,
+      surface: darkSurface,
+      background: darkBackground,
+      onSurface: const Color(0xFFF5F5F5),
+      onBackground: const Color(0xFFF5F5F5),
+      onPrimary: const Color(0xFF121212),
+      onSecondary: const Color(0xFF121212),
+    );
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'نفحات',
+      themeMode: _themeMode,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: lightColorScheme,
+        scaffoldBackgroundColor: lightColorScheme.surface,
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+          ThemeData.light().textTheme,
+        ).apply(
+          bodyColor: lightColorScheme.onSurface,
+          displayColor: lightColorScheme.onSurface,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            color: lightColorScheme.primary,
+          ),
+        ),
       ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: darkColorScheme,
+        scaffoldBackgroundColor: darkColorScheme.background,
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+          ThemeData.dark().textTheme,
+        ).apply(
+          bodyColor: darkColorScheme.onSurface,
+          displayColor: darkColorScheme.onSurface,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            color: darkColorScheme.primary,
+          ),
+        ),
+      ),
+      home: const SplashScreen(),
     );
   }
 }
