@@ -4,6 +4,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:nafahat/screens/onboarding_screen.dart';
 
+// مُستمع عام ديناميكي للتحكم في وضع المظهر من أي شاشة داخل التطبيق
+final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.system);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ar', null);
@@ -19,11 +22,9 @@ class NafahatApp extends StatefulWidget {
 }
 
 class _NafahatAppState extends State<NafahatApp> {
-  final ThemeMode _themeMode = ThemeMode.system;
-
   @override
   Widget build(BuildContext context) {
-    // الألوان الملكية الفخمة للتصميم الجديد
+    // الألوان الملكية الفخمة للتصميم الجديد الخاص بك
     const Color primaryGold = Color(0xFFC5A880);
     const Color deepEmerald = Color(0xFF0B3C18);
     const Color lightBg = Color(0xFFF9F6F0);
@@ -36,7 +37,6 @@ class _NafahatAppState extends State<NafahatApp> {
       primary: deepEmerald,
       secondary: primaryGold,
       surface: const Color(0xFFFFFFFF),
-      background: lightBg,
     );
 
     final darkColorScheme = ColorScheme.fromSeed(
@@ -45,59 +45,63 @@ class _NafahatAppState extends State<NafahatApp> {
       primary: primaryGold,
       secondary: const Color(0xFF2E7D32),
       surface: darkSurface,
-      background: darkBg,
       onSurface: const Color(0xFFE0E0E0),
     );
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'نفحات',
-      themeMode: _themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: lightColorScheme,
-        scaffoldBackgroundColor: lightBg,
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
-          ThemeData.light().textTheme,
-        ).apply(
-          bodyColor: const Color(0xFF2D312E),
-          displayColor: deepEmerald,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          iconTheme: const IconThemeData(color: deepEmerald),
-          titleTextStyle: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            fontSize: 24,
-            color: deepEmerald,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeNotifier,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'نفحات',
+          themeMode: currentMode,
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: lightColorScheme,
+            scaffoldBackgroundColor: lightBg,
+            textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+              ThemeData.light().textTheme,
+            ).apply(
+              bodyColor: const Color(0xFF2D312E),
+              displayColor: deepEmerald,
+            ),
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
+              iconTheme: const IconThemeData(color: deepEmerald),
+              titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+                fontWeight: FontWeight.w900,
+                fontSize: 24,
+                color: deepEmerald,
+              ),
+            ),
           ),
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: darkColorScheme,
-        scaffoldBackgroundColor: darkBg,
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
-          ThemeData.dark().textTheme,
-        ).apply(
-          bodyColor: const Color(0xFFE0E0E0),
-          displayColor: primaryGold,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          iconTheme: const IconThemeData(color: primaryGold),
-          titleTextStyle: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            fontSize: 24,
-            color: primaryGold,
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: darkColorScheme,
+            scaffoldBackgroundColor: darkBg,
+            textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+              ThemeData.dark().textTheme,
+            ).apply(
+              bodyColor: const Color(0xFFE0E0E0),
+              displayColor: primaryGold,
+            ),
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
+              iconTheme: const IconThemeData(color: primaryGold),
+              titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+                fontWeight: FontWeight.w900,
+                fontSize: 24,
+                color: primaryGold,
+              ),
+            ),
           ),
-        ),
-      ),
-      home: const OnboardingScreen(),
+          home: const OnboardingScreen(),
+        );
+      },
     );
   }
 }

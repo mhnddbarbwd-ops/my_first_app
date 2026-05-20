@@ -12,8 +12,13 @@ class _TasbihScreenState extends State<TasbihScreen> {
   int _count = 0;
   int _totalCount = 0;
   final List<String> _adhkar = [
-    'سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله',
-    'أستغفر الله', 'سبحان الله وبحمده', 'لا حول ولا قوة إلا بالله'
+    'سبحان الله وبحمده، سبحان الله العظيم',
+    'الحمد لله حمداً كثيراً طيباً مباركاً فيه',
+    'الله أكبر كبيراً، والحمد لله كثيراً',
+    'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد',
+    'أستغفر الله العظيم وأتوب إليه',
+    'لا حول ولا قوة إلا بالله العلي العظيم',
+    'اللهم صلِّ وسلم وبارك على نبينا محمد'
   ];
   int _selectedDhikr = 0;
 
@@ -23,16 +28,14 @@ class _TasbihScreenState extends State<TasbihScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'المسبحة الإلكترونية',
-          style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900),
-        ),
+        title: Text('المسبحة الإلكترونية', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
       ),
       body: Column(
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          // جزء اختيار الذكر الأفقي
           SizedBox(
-            height: 46,
+            height: 50,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -41,9 +44,9 @@ class _TasbihScreenState extends State<TasbihScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: ChoiceChip(
                   label: Text(
-                    _adhkar[i],
+                    _adhkar[i].split('،')[0], // إظهار الشق الأول من الذكر في شريط الاختيار للحفاظ على المساحة
                     style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _selectedDhikr == i ? Colors.white : colorScheme.onSurface.withOpacity(0.7),
                     ),
@@ -60,7 +63,37 @@ class _TasbihScreenState extends State<TasbihScreen> {
               ),
             ),
           ),
+          
+          const SizedBox(height: 30),
+          
+          // حل مشكلة الاقتطاع: صندوق نصي ذكي ومرن يعرض الذكر كاملاً وبخط واضح
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
+              ),
+              child: Text(
+                _adhkar[_selectedDhikr],
+                textAlign: TextAlign.center,
+                style: GoogleFonts.ibmPlexSansArabic(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.primary,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ),
+
           const Spacer(),
+          
+          // زر عداد التسبيح الدائري
           GestureDetector(
             onTap: () => setState(() {
               _count++;
@@ -70,29 +103,25 @@ class _TasbihScreenState extends State<TasbihScreen> {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 260,
-                  height: 260,
+                  width: 270,
+                  height: 270,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.primary.withOpacity(0.1), width: 8),
+                    border: Border.all(color: colorScheme.primary.withOpacity(0.08), width: 12),
                   ),
                 ),
                 Container(
-                  width: 220,
-                  height: 220,
+                  width: 230,
+                  height: 230,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.6)],
+                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.65)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.4),
-                        blurRadius: 40,
-                        offset: const Offset(0, 15),
-                      ),
+                      BoxShadow(color: colorScheme.primary.withOpacity(0.35), blurRadius: 40, offset: const Offset(0, 15)),
                     ],
                   ),
                   child: Center(
@@ -101,19 +130,9 @@ class _TasbihScreenState extends State<TasbihScreen> {
                       children: [
                         Text(
                           '$_count',
-                          style: GoogleFonts.ibmPlexSansArabic(
-                            fontSize: 68,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
+                          style: GoogleFonts.ibmPlexSansArabic(fontSize: 72, fontWeight: FontWeight.w900, color: Colors.white),
                         ),
-                        Text(
-                          'اضغط للتسبيح',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
+                        Text('اضغط هنا', style: GoogleFonts.ibmPlexSansArabic(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),
@@ -121,31 +140,25 @@ class _TasbihScreenState extends State<TasbihScreen> {
               ],
             ),
           ),
+          
           const Spacer(),
+          
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 28),
+            decoration: BoxDecoration(color: colorScheme.surface, borderRadius: BorderRadius.circular(24)),
             child: Text(
-              'إجمالي التسبيحات الكلي: $_totalCount',
-              style: GoogleFonts.ibmPlexSansArabic(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
+              'مجموع تسبيحاتك الكلي: $_totalCount',
+              style: GoogleFonts.ibmPlexSansArabic(fontSize: 15, fontWeight: FontWeight.bold, color: colorScheme.onSurface.withOpacity(0.6)),
             ),
           ),
-          const SizedBox(height: 32),
+          
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildControlBtn(Icons.refresh_rounded, 'إعادة ضبط', () => setState(() {
-                _count = 0;
-              }), colorScheme),
+              _buildControlBtn(Icons.refresh_rounded, 'تصفير', () => setState(() => _count = 0), colorScheme),
               const SizedBox(width: 16),
-              _buildControlBtn(Icons.undo_rounded, 'تراجع آلي', () => setState(() {
+              _buildControlBtn(Icons.undo_rounded, 'تراجع خطوة', () => setState(() {
                 if (_count > 0) _count--;
                 if (_totalCount > 0) _totalCount--;
               }), colorScheme),
@@ -172,13 +185,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
           children: [
             Icon(icon, color: colorScheme.primary, size: 20),
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.ibmPlexSansArabic(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(label, style: GoogleFonts.ibmPlexSansArabic(color: colorScheme.primary, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

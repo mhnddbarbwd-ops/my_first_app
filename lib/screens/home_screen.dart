@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:nafahat/main.dart'; // لاستيراد themeNotifier
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
+import 'package:nafahat/screens/prayer_times_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,10 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.wb_sunny_outlined),
-          onPressed: () {}, // للتطوير المستقبلي للثيم يدوياً
-        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         title: Text(
           'نَـفَـحَـات',
           style: GoogleFonts.ibmPlexSansArabic(
@@ -68,12 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: colorScheme.primary,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
-          )
-        ],
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -82,10 +77,23 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // قسم أزرار التحكم بالثيم الثلاثية الاحترافية
+              Text(
+                'مظهر التطبيق',
+                style: GoogleFonts.ibmPlexSansArabic(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildThemeSelector(context),
+              const SizedBox(height: 24),
+              
               _buildDateTimeCard(colorScheme, isDark),
               const SizedBox(height: 32),
               Text(
-                'الخدمات والمميزات',
+                'الخدمات والمميزات الإسلامية',
                 style: GoogleFonts.ibmPlexSansArabic(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -111,14 +119,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildMainButton(
                     icon: Icons.mosque_rounded,
                     label: 'مواقيت ومؤشرات',
-                    subtitle: 'الصلاة والقبلة',
-                    gradientColors: const [Color(0xFFC5A880), Color(0xFF9E7E50)], // تم إصلاح الخطأ هنا
-                    onTap: () {}, // شاشة المواقيت حسب مشروعك الأصلي
+                    subtitle: 'الصلاة والموقع الفعلي',
+                    gradientColors: const [Color(0xFFC5A880), Color(0xFF9E7E50)],
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
                   ),
                   _buildMainButton(
                     icon: Icons.book_rounded,
                     label: 'الأحاديث النبوية',
-                    subtitle: 'الأربعين النووية بالشرح',
+                    subtitle: 'الأربعين النووية كاملة',
                     gradientColors: const [Color(0xFF114B43), Color(0xFF004D40)],
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
                   ),
@@ -132,6 +140,62 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeSelector(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, currentMode, __) {
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          ),
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              _buildThemeOption(ThemeMode.light, Icons.wb_sunny_rounded, 'فاتح', currentMode, colorScheme),
+              _buildThemeOption(ThemeMode.dark, Icons.nightlight_round, 'مظلم', currentMode, colorScheme),
+              _buildThemeOption(ThemeMode.system, Icons.settings_suggest_rounded, 'تلقائي', currentMode, colorScheme),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeOption(ThemeMode mode, IconData icon, String label, ThemeMode currentMode, ColorScheme colorScheme) {
+    final isSelected = currentMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => themeNotifier.value = mode,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6), size: 20),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.ibmPlexSansArabic(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
             ],
           ),
         ),
@@ -179,11 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.location_on_rounded,
-                          size: 18,
-                          color: isDark ? colorScheme.primary : colorScheme.secondary,
-                        ),
+                        Icon(Icons.location_on_rounded, size: 18, color: isDark ? colorScheme.primary : colorScheme.secondary),
                         const SizedBox(width: 6),
                         Text(
                           'توقيت مكة المكرمة',
@@ -195,10 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    Icon(
-                      Icons.access_time_filled_rounded,
-                      color: isDark ? colorScheme.primary : colorScheme.secondary,
-                    ),
+                    Icon(Icons.access_time_filled_rounded, color: isDark ? colorScheme.primary : colorScheme.secondary),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -208,24 +265,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
                     color: isDark ? colorScheme.primary : Colors.white,
-                    letterSpacing: 1,
                   ),
                 ),
                 const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.black12 : Colors.black26),
+                    color: isDark ? Colors.black12 : Colors.black26,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 18,
-                        color: isDark ? colorScheme.primary : colorScheme.secondary,
-                      ),
+                      Icon(Icons.calendar_today_rounded, size: 18, color: isDark ? colorScheme.primary : colorScheme.secondary),
                       const SizedBox(width: 10),
                       Text(
                         _hijriDate,
@@ -256,17 +308,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         boxShadow: [
-          BoxShadow(
-            color: gradientColors[0].withOpacity(0.3),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: gradientColors[0].withOpacity(0.3), blurRadius: 14, offset: const Offset(0, 6)),
         ],
       ),
       child: Material(
@@ -282,29 +326,16 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
                   child: Icon(icon, color: Colors.white, size: 28),
                 ),
                 const Spacer(),
                 Text(
                   label,
-                  style: GoogleFonts.ibmPlexSansArabic(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
+                  style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                ),
+                Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7))),
               ],
             ),
           ),
