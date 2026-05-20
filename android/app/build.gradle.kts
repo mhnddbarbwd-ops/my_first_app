@@ -28,21 +28,22 @@ android {
         versionName = flutter.versionName
     }
 
+    buildTypes {
+        debug {
+            // نسخة المطورين تعمل الآن بدون تعقيدات التوقيع
+        }
+        release {
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+    
+    // تأكد من وجود هذا إذا كنت تستخدم Keystore في الـ Release
     signingConfigs {
         create("release") {
             storeFile = file("nafahat-release.keystore")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "mhndbarbwd777611705mhndbarbwd"
             keyAlias = System.getenv("KEY_ALIAS") ?: "nafahat"
             keyPassword = System.getenv("KEY_PASSWORD") ?: "mhndbarbwd777611705mhndbarbwd"
-        }
-    }
-
-    buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("release")
-        }
-        release {
-            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
