@@ -13,13 +13,8 @@ class _TasbihScreenState extends State<TasbihScreen> {
   int _count = 0;
   int _totalCount = 0;
   final List<String> _adhkar = [
-    'سبحان الله',
-    'الحمد لله',
-    'الله أكبر',
-    'لا إله إلا الله',
-    'أستغفر الله',
-    'سبحان الله وبحمده',
-    'لا حول ولا قوة إلا بالله',
+    'سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله',
+    'أستغفر الله', 'سبحان الله وبحمده', 'لا حول ولا قوة إلا بالله'
   ];
   int _selectedDhikr = 0;
 
@@ -42,16 +37,15 @@ class _TasbihScreenState extends State<TasbihScreen> {
       body: Column(
         children: [
           const SizedBox(height: 20),
-          // قائمة الأذكار الأفقية
           SizedBox(
-            height: 45,
+            height: 50,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _adhkar.length,
               itemBuilder: (ctx, i) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: ChoiceChip(
+                child: FilterChip(
                   label: Text(
                     _adhkar[i],
                     style: GoogleFonts.ibmPlexSansArabic(
@@ -62,28 +56,20 @@ class _TasbihScreenState extends State<TasbihScreen> {
                     ),
                   ),
                   selected: _selectedDhikr == i,
-                  selectedColor: colorScheme.primary.withOpacity(0.15),
-                  backgroundColor: colorScheme.surface,
                   onSelected: (_) => setState(() {
                     _selectedDhikr = i;
                     _count = 0;
                   }),
+                  selectedColor: colorScheme.primary.withOpacity(0.15),
+                  backgroundColor: colorScheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 30),
-          // الذكر الحالي
-          Text(
-            _adhkar[_selectedDhikr],
-            style: GoogleFonts.ibmPlexSansArabic(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 30),
-          // عداد المسبحة (زر دائري كبير)
+          const SizedBox(height: 40),
           GestureDetector(
             onTap: () => setState(() {
               _count++;
@@ -94,14 +80,14 @@ class _TasbihScreenState extends State<TasbihScreen> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: Container(
-                  width: 180,
-                  height: 180,
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [
-                        colorScheme.primary.withOpacity(0.2),
-                        colorScheme.secondary.withOpacity(0.05),
+                        colorScheme.primary.withOpacity(0.25),
+                        colorScheme.secondary.withOpacity(0.1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -122,7 +108,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
                     child: Text(
                       '$_count',
                       style: TextStyle(
-                        fontSize: 60,
+                        fontSize: 64,
                         fontWeight: FontWeight.w900,
                         color: colorScheme.primary,
                       ),
@@ -136,34 +122,23 @@ class _TasbihScreenState extends State<TasbihScreen> {
           Text(
             'المجموع: $_totalCount',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 16,
               color: colorScheme.onSurface.withOpacity(0.5),
             ),
           ),
           const SizedBox(height: 30),
-          // أزرار التحكم
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildControlButton(
-                icon: Icons.refresh,
-                label: 'تصفير',
-                onTap: () => setState(() {
-                  _count = 0;
-                  _totalCount = 0;
-                }),
-                colorScheme: colorScheme,
-              ),
+              _buildControlBtn(Icons.refresh, 'تصفير', () => setState(() {
+                _count = 0;
+                _totalCount = 0;
+              }), colorScheme),
               const SizedBox(width: 20),
-              _buildControlButton(
-                icon: Icons.undo,
-                label: 'تراجع',
-                onTap: () => setState(() {
-                  if (_count > 0) _count--;
-                  if (_totalCount > 0) _totalCount--;
-                }),
-                colorScheme: colorScheme,
-              ),
+              _buildControlBtn(Icons.undo, 'تراجع', () => setState(() {
+                if (_count > 0) _count--;
+                if (_totalCount > 0) _totalCount--;
+              }), colorScheme),
             ],
           ),
         ],
@@ -171,49 +146,27 @@ class _TasbihScreenState extends State<TasbihScreen> {
     );
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required ColorScheme colorScheme,
-  }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primary.withOpacity(0.15),
-                colorScheme.primary.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: colorScheme.primary.withOpacity(0.2),
-            ),
+  Widget _buildControlBtn(IconData icon, String label, VoidCallback onTap, ColorScheme colorScheme) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colorScheme.primary.withOpacity(0.3)),
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.primary.withOpacity(0.15),
+              colorScheme.primary.withOpacity(0.05),
+            ],
           ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Row(
-              children: [
-                Icon(icon, color: colorScheme.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: colorScheme.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600)),
+          ],
         ),
       ),
     );

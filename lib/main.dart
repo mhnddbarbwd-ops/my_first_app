@@ -1,11 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:nafahat/screens/splash_screen.dart';
-import 'package:nafahat/screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +75,13 @@ class _NafahatAppState extends State<NafahatApp> {
             color: lightColorScheme.primary,
           ),
         ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          color: lightColorScheme.surface,
+        ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -98,6 +102,13 @@ class _NafahatAppState extends State<NafahatApp> {
             fontSize: 22,
             color: darkColorScheme.primary,
           ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          color: darkColorScheme.surface,
         ),
       ),
       home: const SplashScreen(),

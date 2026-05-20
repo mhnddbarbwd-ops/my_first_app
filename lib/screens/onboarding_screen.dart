@@ -40,10 +40,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
   ];
 
-  void _goToLogin() {
+  void _goToHome() {
     Navigator.pushReplacement(
       context,
-      // تغيير الوجهة إلى HomeScreen مباشرة
       MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
@@ -65,7 +64,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             itemCount: _pages.length,
             itemBuilder: (context, index) {
               final page = _pages[index];
-              return _buildPage(page, index);
+              return _buildPage(page);
             },
           ),
           Positioned(
@@ -105,7 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             curve: Curves.easeInOut,
                           );
                         } else {
-                          _goToLogin();
+                          _goToHome();
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -128,7 +127,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 if (_currentPage < _pages.length - 1) ...[
                   const SizedBox(height: 12),
                   TextButton(
-                    onPressed: _goToLogin,
+                    onPressed: _goToHome,
                     child: Text(
                       'تخطي',
                       style: GoogleFonts.ibmPlexSansArabic(
@@ -145,15 +144,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPage(Map<String, dynamic> page, int index) {
+  Widget _buildPage(Map<String, dynamic> page) {
     final color = page['color'] as Color;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.05),
-            Theme.of(context).colorScheme.surface,
-          ],
+          colors: [color.withOpacity(0.05), Theme.of(context).colorScheme.surface],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -175,17 +171,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        colors: [
-                          color.withOpacity(0.2),
-                          color.withOpacity(0.05),
-                        ],
+                        colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      border: Border.all(
-                        color: color.withOpacity(0.3),
-                        width: 2,
-                      ),
+                      border: Border.all(color: color.withOpacity(0.3), width: 2),
                     ),
                     child: Icon(page['icon'], size: 70, color: color),
                   ),
