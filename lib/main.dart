@@ -17,34 +17,116 @@ void main() async {
   runApp(const NafahatApp());
 }
 
-class NafahatApp extends StatelessWidget {
+class NafahatApp extends StatefulWidget {
   const NafahatApp({super.key});
 
   @override
+  State<NafahatApp> createState() => _NafahatAppState();
+}
+
+class _NafahatAppState extends State<NafahatApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void toggleTheme(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // تعريف الألوان يدويًا للتحكم الكامل في التباين
+    const Color seedColor = Color(0xFF1B5E20);
+    const Color lightSurface = Color(0xFFF5F0E8);
+    const Color darkSurface = Color(0xFF1A1A1A);
+    const Color darkBackground = Color(0xFF121212);
+
+    final lightColorScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: Brightness.light,
+      surface: lightSurface,
+    );
+
+    final darkColorScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: Brightness.dark,
+      surface: darkSurface,
+      background: darkBackground,
+      onSurface: const Color(0xFFF5F5F5),
+      onBackground: const Color(0xFFF5F5F5),
+      onPrimary: const Color(0xFF121212),
+      onSecondary: const Color(0xFF121212),
+    );
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'نفحات',
+      themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.light,
-        colorSchemeSeed: const Color(0xFF1B5E20),
-        scaffoldBackgroundColor: const Color(0xFFF5F0E8),
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(),
+        colorScheme: lightColorScheme,
+        scaffoldBackgroundColor: lightColorScheme.surface,
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+          ThemeData.light().textTheme,
+        ).apply(
+          bodyColor: lightColorScheme.onSurface,
+          displayColor: lightColorScheme.onSurface,
+        ),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
           titleTextStyle: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900, fontSize: 22,
-            color: const Color(0xFF1B5E20),
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            color: lightColorScheme.primary,
           ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          color: lightColorScheme.surface,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: lightColorScheme.surface,
+          selectedItemColor: lightColorScheme.primary,
+          unselectedItemColor: lightColorScheme.onSurface.withOpacity(0.5),
         ),
       ),
       darkTheme: ThemeData(
-        useMaterial3: true, brightness: Brightness.dark,
-        colorSchemeSeed: const Color(0xFF1B5E20),
-        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme),
+        useMaterial3: true,
+        colorScheme: darkColorScheme,
+        scaffoldBackgroundColor: darkColorScheme.background,
+        textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+          ThemeData.dark().textTheme,
+        ).apply(
+          bodyColor: darkColorScheme.onSurface,
+          displayColor: darkColorScheme.onSurface,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            color: darkColorScheme.primary,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          color: darkColorScheme.surface,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: darkColorScheme.surface,
+          selectedItemColor: darkColorScheme.primary,
+          unselectedItemColor: darkColorScheme.onSurface.withOpacity(0.5),
+        ),
       ),
       home: const AuthGate(),
     );
@@ -64,10 +146,8 @@ class AuthGate extends StatelessWidget {
         }
         final user = snapshot.data;
         if (user == null) {
-          // لم يسجل دخول → الصفحات الترحيبية ثم تسجيل الدخول
           return const OnboardingScreen();
         }
-        // مسجل الدخول → الشاشة الرئيسية
         return const HomeScreen();
       },
     );

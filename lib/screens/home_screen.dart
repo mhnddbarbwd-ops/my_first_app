@@ -11,6 +11,7 @@ import 'package:nafahat/screens/hadith_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -29,105 +30,255 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() { _timer?.cancel(); super.dispose(); }
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   void _updateDateTime() {
     final makkahTime = DateTime.now().toUtc().add(const Duration(hours: 3));
     final timeFormat = DateFormat('hh:mm:ss a', 'ar');
     final today = HijriDate.now();
-    const months = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+    const months = [
+      'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
+      'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+      'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+    ];
     setState(() {
       _currentTime = timeFormat.format(makkahTime);
-      _hijriDate = '${today.hDay} ${months[today.hMonth-1]} ${today.hYear} هـ';
+      _hijriDate = '${today.hDay} ${months[today.hMonth - 1]} ${today.hYear} هـ';
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('نفحات', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
-        backgroundColor: Colors.transparent, elevation: 0,
+        title: Text(
+          'نفحات',
+          style: GoogleFonts.ibmPlexSansArabic(
+            fontWeight: FontWeight.w900,
+            fontSize: 26,
+            color: colorScheme.primary,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           if (user != null)
             IconButton(
               onPressed: () => FirebaseAuth.instance.signOut(),
-              icon: const Icon(Icons.logout_rounded, color: Colors.red),
+              icon: Icon(Icons.logout_rounded, color: colorScheme.error),
               tooltip: 'تسجيل الخروج',
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity, padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(colors: [colorScheme.primary.withOpacity(0.1), colorScheme.secondary.withOpacity(0.05)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
-                boxShadow: [BoxShadow(color: colorScheme.primary.withOpacity(0.1), blurRadius: 20, offset: const Offset(0,5))],
-              ),
-              child: Column(children: [
-                Icon(Icons.access_time_rounded, size:40, color: colorScheme.primary),
-                const SizedBox(height:12),
-                Text(_currentTime, style: TextStyle(fontSize:36, fontWeight:FontWeight.w900, color:colorScheme.primary)),
-                const SizedBox(height:4),
-                Text('توقيت مكة المكرمة', style: TextStyle(fontSize:12, color: colorScheme.onSurface.withOpacity(0.5))),
-                const SizedBox(height:16), Divider(color: colorScheme.primary.withOpacity(0.2)), const SizedBox(height:16),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.calendar_month_rounded, size:20, color:colorScheme.primary),
-                  const SizedBox(width:8),
-                  Text(_hijriDate, style: TextStyle(fontSize:16, fontWeight:FontWeight.w600, color: colorScheme.onSurface.withOpacity(0.8))),
-                ]),
-              ]),
-            ),
-            const SizedBox(height:30),
+            // بطاقة الوقت والتاريخ الرئيسية
             Container(
               width: double.infinity,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: LinearGradient(colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)]), boxShadow: [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius:15, offset:Offset(0,8))]),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder:(_)=>const QuranScreen())),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(padding: const EdgeInsets.all(20), child: Row(children: [
-                    Container(width:50,height:50,decoration:BoxDecoration(color:Colors.white.withOpacity(0.2),borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.menu_book_rounded,color:Colors.white,size:28)),
-                    const SizedBox(width:16),
-                    Expanded(child: Column(crossAxisAlignment:CrossAxisAlignment.start, children: [const Text('القرآن الكريم',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900,color:Colors.white)),const SizedBox(height:4),Text('مصحف المدينة النبوية',style:TextStyle(fontSize:13,color:Colors.white.withOpacity(0.8)))])),
-                    const Icon(Icons.arrow_forward_ios,color:Colors.white,size:18),
-                  ])),
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.primary.withOpacity(isDark ? 0.3 : 0.1),
+                    colorScheme.secondary.withOpacity(isDark ? 0.2 : 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(isDark ? 0.4 : 0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1),
+                    blurRadius: 25,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // أيقونة الساعة
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colorScheme.primary.withOpacity(0.15),
+                    ),
+                    child: Icon(
+                      Icons.access_time_rounded,
+                      color: colorScheme.primary,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // الوقت
+                  Text(
+                    _currentTime,
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'توقيت مكة المكرمة',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Divider(color: colorScheme.primary.withOpacity(0.2)),
+                  const SizedBox(height: 14),
+                  // التاريخ الهجري
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.calendar_month_rounded,
+                        size: 20,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _hijriDate,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height:16),
-            Row(children: [
-              Expanded(child: _buildBtn(Icons.mosque_rounded, 'مواقيت + بوصلة', ()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const PrayerTimesScreen())))),
-              const SizedBox(width:10),
-              Expanded(child: _buildBtn(Icons.book_rounded, 'الأحاديث', ()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const HadithScreen())))),
-            ]),
-            const SizedBox(height:10),
-            Row(children: [
-              Expanded(child: _buildBtn(Icons.fingerprint, 'المسبحة', ()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const TasbihScreen())))),
-              const SizedBox(width:10),
-              Expanded(child: _buildBtn(Icons.explore_rounded, 'القبلة', (){})),
-            ]),
+            const SizedBox(height: 24),
+            // الأزرار الرئيسية
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                childAspectRatio: 1.0,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                children: [
+                  _buildMainButton(
+                    icon: Icons.menu_book_rounded,
+                    label: 'القرآن الكريم',
+                    subtitle: 'مصحف المدينة',
+                    color: colorScheme.primary,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
+                  ),
+                  _buildMainButton(
+                    icon: Icons.mosque_rounded,
+                    label: 'مواقيت + بوصلة',
+                    subtitle: 'الصلاة والقبلة',
+                    color: const Color(0xFF00897B),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
+                  ),
+                  _buildMainButton(
+                    icon: Icons.book_rounded,
+                    label: 'الأحاديث',
+                    subtitle: 'الأربعين النووية',
+                    color: const Color(0xFF00695C),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
+                  ),
+                  _buildMainButton(
+                    icon: Icons.fingerprint,
+                    label: 'المسبحة',
+                    subtitle: 'سبّح واذكر',
+                    color: const Color(0xFF004D40),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBtn(IconData icon, String title, VoidCallback onTap) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(borderRadius:BorderRadius.circular(16), border:Border.all(color:colorScheme.primary.withOpacity(0.15)), color:colorScheme.surface.withOpacity(0.8)),
-      child: Material(color:Colors.transparent, child: InkWell(onTap:onTap, borderRadius:BorderRadius.circular(16), child: Padding(padding:const EdgeInsets.all(16), child:Column(children:[Icon(icon,color:colorScheme.primary,size:28),const SizedBox(height:8),Text(title,style:TextStyle(fontSize:14,fontWeight:FontWeight.w600,color:colorScheme.onSurface))])))),
+  Widget _buildMainButton({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: [
+                color.withOpacity(isDark ? 0.25 : 0.1),
+                color.withOpacity(isDark ? 0.15 : 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: color.withOpacity(isDark ? 0.4 : 0.2),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.15),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

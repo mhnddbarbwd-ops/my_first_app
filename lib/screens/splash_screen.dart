@@ -32,8 +32,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF1B5E20),
+      backgroundColor: colorScheme.primary,
       body: Center(
         child: FadeTransition(
           opacity: _fadeIn,
@@ -41,7 +42,8 @@ class _SplashScreenState extends State<SplashScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 120, height: 120,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(30),
@@ -53,22 +55,27 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.menu_book_rounded, size: 60,
-                  color: Color(0xFF1B5E20),
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  size: 60,
+                  color: colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 30),
-              Text('نفحات',
+              Text(
+                'نفحات',
                 style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 48, fontWeight: FontWeight.w900,
+                  fontSize: 48,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
-              Text('تطبيق القرآن الكريم',
+              Text(
+                'تطبيق القرآن الكريم',
                 style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 18, color: Colors.white.withOpacity(0.8),
+                  fontSize: 18,
+                  color: Colors.white.withOpacity(0.8),
                 ),
               ),
             ],

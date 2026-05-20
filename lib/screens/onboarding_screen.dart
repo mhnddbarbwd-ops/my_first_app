@@ -69,7 +69,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           // نقاط التنقل السفلية
           Positioned(
-            bottom: 100, left: 0, right: 0,
+            bottom: 100,
+            left: 0,
+            right: 0,
             child: Column(
               children: [
                 Row(
@@ -84,7 +86,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         borderRadius: BorderRadius.circular(4),
                         color: _currentPage == i
                             ? _pages[i]['color']
-                            : Colors.grey.shade300,
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                       ),
                     );
                   }),
@@ -116,7 +118,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         _currentPage < _pages.length - 1 ? 'متابعة' : 'ابدأ الآن',
                         style: GoogleFonts.ibmPlexSansArabic(
-                          fontSize: 18, fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
@@ -127,9 +130,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: _goToLogin,
-                    child: Text('تخطي',
+                    child: Text(
+                      'تخطي',
                       style: GoogleFonts.ibmPlexSansArabic(
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       ),
                     ),
                   ),
@@ -147,7 +151,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.05), Colors.white],
+          colors: [
+            color.withOpacity(0.05),
+            Theme.of(context).colorScheme.surface,
+          ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -165,15 +172,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 return Transform.scale(
                   scale: value,
                   child: Container(
-                    width: 160, height: 160,
+                    width: 160,
+                    height: 160,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
+                        colors: [
+                          color.withOpacity(0.2),
+                          color.withOpacity(0.05),
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      border: Border.all(color: color.withOpacity(0.3), width: 2),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 2,
+                      ),
                     ),
                     child: Icon(page['icon'], size: 70, color: color),
                   ),
@@ -188,7 +202,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 page['title'],
                 textAlign: TextAlign.center,
                 style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 26, fontWeight: FontWeight.w900, color: color,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: color,
                 ),
               ),
             ),
@@ -200,8 +216,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 page['desc'],
                 textAlign: TextAlign.center,
                 style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 16, height: 1.6,
-                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                  height: 1.6,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ),
