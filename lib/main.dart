@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:nafahat/screens/onboarding_screen.dart';
+import 'package:nafahat/services/goals_service.dart';        // 🆕
+import 'package:nafahat/services/reminder_service.dart';      // 🆕
 
 // مُستمع عام ديناميكي للتحكم في وضع المظهر من أي شاشة داخل التطبيق
 final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.system);
@@ -11,6 +13,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ar', null);
   HijriDate.setLocal('ar');
+
+  // تهيئة خدمات الأهداف والتذكير
+  await GoalsService().init();
+  await ReminderService().init();
+
   runApp(const NafahatApp());
 }
 

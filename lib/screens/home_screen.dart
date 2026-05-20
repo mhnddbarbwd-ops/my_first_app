@@ -8,6 +8,7 @@ import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
+import 'package:nafahat/screens/goals_screen.dart';  // 🆕 استيراد صفحة التحديات
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -160,6 +161,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)]
                             : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
+                      ),
+                      // 🆕 بطاقة تحدي ختم القرآن
+                      _buildMenuCard(
+                        icon: Icons.flag_rounded,
+                        label: 'تحدي ختم القرآن',
+                        subtitle: 'حدد هدفك وتابع إنجازك',
+                        colors: isDark
+                            ? [const Color(0xFF3D5A5C), const Color(0xFF1F3A3C)]
+                            : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GoalsScreen())),
                       ),
                     ],
                   ),
