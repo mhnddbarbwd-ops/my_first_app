@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "115309904282-oq7rvkpthjhfipfagcsc71vtgic80c58.apps.googleusercontent.com",
+          "client_id": "115309904282-0jcvlgsgusou5bga4v88p6og8v3h2shm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nafahat.quran",
-            "certificate_hash": "fb5995d1e2fb48631c2595ce842db2354c8b89cb"
+            "certificate_hash": "1a7855c9f516a7d03c3795a77448eb4beb8fe7d9"
           }
         },
         {
