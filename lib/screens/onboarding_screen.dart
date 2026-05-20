@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nafahat/screens/login_screen.dart';
+import 'package:nafahat/screens/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -43,7 +43,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _goToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      // تغيير الوجهة إلى HomeScreen مباشرة
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 
@@ -67,7 +68,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               return _buildPage(page, index);
             },
           ),
-          // نقاط التنقل السفلية
           Positioned(
             bottom: 100,
             left: 0,
@@ -92,7 +92,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   }),
                 ),
                 const SizedBox(height: 30),
-                // زر المتابعة
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: SizedBox(
@@ -164,7 +163,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 1),
-            // أيقونة كبيرة
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
               duration: const Duration(milliseconds: 800),
@@ -195,7 +193,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               },
             ),
             const SizedBox(height: 50),
-            // العنوان
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Text(
@@ -209,7 +206,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // الوصف
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
