@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -96,12 +95,12 @@ class _HadithScreenState extends State<HadithScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.emerald.withOpacity(0.15),
+                  color: Colors.teal.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   h['grade']!,
-                  style: const TextStyle(fontSize: 11, color: Colors.emerald, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 11, color: Colors.teal, fontWeight: FontWeight.bold),
                 ),
               ),
             ],

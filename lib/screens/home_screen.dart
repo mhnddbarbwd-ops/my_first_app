@@ -105,28 +105,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.menu_book_rounded,
                     label: 'القرآن الكريم',
                     subtitle: 'تصفح وتدبر وبحث',
-                    gradientColors: [const Color(0xFF0B3C18), const Color(0xFF1B5E20)],
+                    gradientColors: const [Color(0xFF0B3C18), Color(0xFF1B5E20)],
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
                   ),
                   _buildMainButton(
                     icon: Icons.mosque_rounded,
                     label: 'مواقيت ومؤشرات',
                     subtitle: 'الصلاة والقبلة',
-                    gradientColors: [const Color(0xFFC5A880), const Color(0 tap: 0xFF9E7E50)],
+                    gradientColors: const [Color(0xFFC5A880), Color(0xFF9E7E50)], // تم إصلاح الخطأ هنا
                     onTap: () {}, // شاشة المواقيت حسب مشروعك الأصلي
                   ),
                   _buildMainButton(
                     icon: Icons.book_rounded,
                     label: 'الأحاديث النبوية',
                     subtitle: 'الأربعين النووية بالشرح',
-                    gradientColors: [const Color(0xFF114B43), const Color(0xFF004D40)],
+                    gradientColors: const [Color(0xFF114B43), Color(0xFF004D40)],
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
                   ),
                   _buildMainButton(
                     icon: Icons.fingerprint_rounded,
                     label: 'المسبحة الذكية',
                     subtitle: 'عداد الأذكار المطور',
-                    gradientColors: [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
+                    gradientColors: const [Color(0xFF2E5B3E), Color(0xFF1E3D29)],
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
                   ),
                 ],
