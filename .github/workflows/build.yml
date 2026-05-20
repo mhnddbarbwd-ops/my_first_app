@@ -13,20 +13,16 @@ jobs:
         with:
           flutter-version: '3.41.9'
       - run: flutter pub get
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/nafahat-release.keystore
       - run: flutter build apk --debug
-      - run: cd android && chmod +x gradlew && ./gradlew signingReport
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
-      - name: Create Service Account JSON
-        run: |
-          cat > service-account.json << 'EOFJSON'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-          EOFJSON
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFile: service-account.json
+          serviceCredentialsFile: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
           file: build/app/outputs/flutter-apk/app-debug.apk
