@@ -14,6 +14,7 @@ class _QuranScreenState extends State<QuranScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _currentPage = 1;
 
+  // الصفحات الأولى لكل جزء
   static const Map<int, int> _juzStartPages = {
     1: 1,   2: 22,  3: 42,  4: 62,  5: 82,  6: 102,
     7: 121, 8: 142, 9: 162, 10: 182, 11: 201, 12: 222,
@@ -52,7 +53,8 @@ class _QuranScreenState extends State<QuranScreen> {
             onPressed: () {
               if (_searchController.text.trim().isNotEmpty) {
                 try {
-                  final results = searchWords([_searchController.text.trim()]);
+                  // تم إصلاح الخطأ: searchWords تقبل String وليس List
+                  final results = searchWords(_searchController.text.trim());
                   if (results['result'] != null && (results['result'] as List).isNotEmpty) {
                     final firstMatch = results['result'][0];
                     final surah = firstMatch['suraNumber'] as int;
