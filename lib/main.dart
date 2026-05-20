@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
-import 'package:nafahat/screens/splash_screen.dart';
+import 'package:nafahat/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,36 +19,34 @@ class NafahatApp extends StatefulWidget {
 }
 
 class _NafahatAppState extends State<NafahatApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  void toggleTheme(ThemeMode mode) {
-    setState(() {
-      _themeMode = mode;
-    });
-  }
+  final ThemeMode _themeMode = ThemeMode.system;
 
   @override
   Widget build(BuildContext context) {
-    const Color seedColor = Color(0xFF1B5E20);
-    const Color lightSurface = Color(0xFFF5F0E8);
-    const Color darkSurface = Color(0xFF1A1A1A);
-    const Color darkBackground = Color(0xFF121212);
+    // الألوان الملكية الفخمة للتصميم الجديد
+    const Color primaryGold = Color(0xFFC5A880);
+    const Color deepEmerald = Color(0xFF0B3C18);
+    const Color lightBg = Color(0xFFF9F6F0);
+    const Color darkBg = Color(0xFF0F1410);
+    const Color darkSurface = Color(0xFF18221A);
 
     final lightColorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor,
+      seedColor: deepEmerald,
       brightness: Brightness.light,
-      surface: lightSurface,
+      primary: deepEmerald,
+      secondary: primaryGold,
+      surface: const Color(0xFFFFFFFF),
+      background: lightBg,
     );
 
     final darkColorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor,
+      seedColor: deepEmerald,
       brightness: Brightness.dark,
+      primary: primaryGold,
+      secondary: const Color(0xFF2E7D32),
       surface: darkSurface,
-      background: darkBackground,
-      onSurface: const Color(0xFFF5F5F5),
-      onBackground: const Color(0xFFF5F5F5),
-      onPrimary: const Color(0xFF121212),
-      onSecondary: const Color(0xFF121212),
+      background: darkBg,
+      onSurface: const Color(0xFFE0E0E0),
     );
 
     return MaterialApp(
@@ -58,60 +56,48 @@ class _NafahatAppState extends State<NafahatApp> {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: lightColorScheme,
-        scaffoldBackgroundColor: lightColorScheme.surface,
+        scaffoldBackgroundColor: lightBg,
         textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
           ThemeData.light().textTheme,
         ).apply(
-          bodyColor: lightColorScheme.onSurface,
-          displayColor: lightColorScheme.onSurface,
+          bodyColor: const Color(0xFF2D312E),
+          displayColor: deepEmerald,
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
+          iconTheme: const IconThemeData(color: deepEmerald),
           titleTextStyle: GoogleFonts.ibmPlexSansArabic(
             fontWeight: FontWeight.w900,
-            fontSize: 22,
-            color: lightColorScheme.primary,
+            fontSize: 24,
+            color: deepEmerald,
           ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          color: lightColorScheme.surface,
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: darkColorScheme,
-        scaffoldBackgroundColor: darkColorScheme.background,
+        scaffoldBackgroundColor: darkBg,
         textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
           ThemeData.dark().textTheme,
         ).apply(
-          bodyColor: darkColorScheme.onSurface,
-          displayColor: darkColorScheme.onSurface,
+          bodyColor: const Color(0xFFE0E0E0),
+          displayColor: primaryGold,
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
+          iconTheme: const IconThemeData(color: primaryGold),
           titleTextStyle: GoogleFonts.ibmPlexSansArabic(
             fontWeight: FontWeight.w900,
-            fontSize: 22,
-            color: darkColorScheme.primary,
+            fontSize: 24,
+            color: primaryGold,
           ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          color: darkColorScheme.surface,
         ),
       ),
-      home: const SplashScreen(),
+      home: const OnboardingScreen(),
     );
   }
 }

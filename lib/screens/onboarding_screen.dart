@@ -17,26 +17,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'icon': Icons.menu_book_rounded,
       'title': 'اقرأ القرآن الكريم',
-      'desc': 'مصحف المدينة المنورة برواية حفص\nخط عثماني واضح ومريح للقراءة',
-      'color': const Color(0xFF1B5E20),
+      'desc': 'مصحف المدينة المنورة برواية حفص\nخط عثماني واضح ومريح للقراءة تالياً ومتدبراً.',
+      'color': const Color(0xFF0B3C18),
     },
     {
       'icon': Icons.headphones_rounded,
-      'title': 'استمع للتلاوات',
-      'desc': 'مجموعة من أصوات القراء المشهورين\nاستمع للقرآن في أي وقت',
-      'color': const Color(0xFF0D7377),
+      'title': 'استمع للتلاوات العذبة',
+      'desc': 'مجموعة مختارة من أصوات كبار القراء في العالم الإسلامي بجودة صوتية نقية.',
+      'color': const Color(0xFFC5A880),
     },
     {
       'icon': Icons.track_changes_rounded,
-      'title': 'خصص أهدافك',
-      'desc': 'حدد أهدافك اليومية واسعَ لتحقيقها\nتتبع تقدمك نحو حياة أفضل',
-      'color': const Color(0xFF00897B),
+      'title': 'حافظ على أورادك',
+      'desc': 'تابع تقدمك الإيماني اليومي واجعل ذكر الله رفيق يومك في كل حركتك.',
+      'color': const Color(0xFF1B5E20),
     },
     {
       'icon': Icons.mosque_rounded,
-      'title': 'مواقيت الصلاة',
-      'desc': 'تعرف على مواقيت الصلاة بدقة\nبوصلة القبلة والمسبحة والأحاديث',
-      'color': const Color(0xFF00695C),
+      'title': 'مواقيت دقيقة والقبلة',
+      'desc': 'تنبيهات دقيقة لكل الصلوات مع بوصلة متطورة لتحديد اتجاه القبلة أينما كنت.',
+      'color': const Color(0xFF004D40),
     },
   ];
 
@@ -55,6 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Stack(
         children: [
@@ -63,14 +64,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             onPageChanged: (i) => setState(() => _currentPage = i),
             itemCount: _pages.length,
             itemBuilder: (context, index) {
-              final page = _pages[index];
-              return _buildPage(page);
+              return _buildPage(_pages[index]);
             },
           ),
           Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
+            bottom: 60,
+            left: 24,
+            right: 24,
             child: Column(
               children: [
                 Row(
@@ -78,30 +78,39 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   children: List.generate(_pages.length, (i) {
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      width: _currentPage == i ? 24 : 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == i ? 32 : 8,
                       height: 8,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(4),
                         color: _currentPage == i
                             ? _pages[i]['color']
-                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                            : (isDark ? Colors.white24 : Colors.black12),
                       ),
                     );
                   }),
                 ),
-                const SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
+                const SizedBox(height: 40),
+                Row(
+                  children: [
+                    if (_currentPage < _pages.length - 1)
+                      TextButton(
+                        onPressed: _goToHome,
+                        child: Text(
+                          'تخطي',
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    const Spacer(),
+                    ElevatedButton(
                       onPressed: () {
                         if (_currentPage < _pages.length - 1) {
                           _pageController.nextPage(
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.easeInOut,
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.fastOutSlowIn,
                           );
                         } else {
                           _goToHome();
@@ -109,33 +118,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _pages[_currentPage]['color'],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        elevation: 4,
                       ),
-                      child: Text(
-                        _currentPage < _pages.length - 1 ? 'متابعة' : 'ابدأ الآن',
-                        style: GoogleFonts.ibmPlexSansArabic(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _currentPage < _pages.length - 1 ? 'التالي' : 'ابدأ الآن',
+                            style: GoogleFonts.ibmPlexSansArabic(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                if (_currentPage < _pages.length - 1) ...[
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _goToHome,
-                    child: Text(
-                      'تخطي',
-                      style: GoogleFonts.ibmPlexSansArabic(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -147,70 +153,57 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildPage(Map<String, dynamic> page) {
     final color = page['color'] as Color;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.05), Theme.of(context).colorScheme.surface],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(flex: 1),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 800),
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(color: color.withOpacity(0.3), width: 2),
-                    ),
-                    child: Icon(page['icon'], size: 70, color: color),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 50),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Text(
-                page['title'],
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(),
+          Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.0),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                page['desc'],
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSansArabic(
-                  fontSize: 16,
-                  height: 1.6,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            child: Center(
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color.withOpacity(0.3), width: 2),
                 ),
+                child: Icon(page['icon'], size: 64, color: color),
               ),
             ),
-            const Spacer(flex: 2),
-          ],
-        ),
+          ),
+          const SizedBox(height: 40),
+          Text(
+            page['title'],
+            textAlign: TextAlign.center,
+            style: GoogleFonts.ibmPlexSansArabic(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            page['desc'],
+            textAlign: TextAlign.center,
+            style: GoogleFonts.ibmPlexSansArabic(
+              fontSize: 16,
+              height: 1.6,
+            ),
+          ),
+          const Spacer(flex: 2),
+        ],
       ),
     );
   }

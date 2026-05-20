@@ -25,147 +25,161 @@ class _TasbihScreenState extends State<TasbihScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'المسبحة',
-          style: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            color: colorScheme.primary,
-          ),
+          'المسبحة الإلكترونية',
+          style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
       body: Column(
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           SizedBox(
-            height: 50,
+            height: 46,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _adhkar.length,
               itemBuilder: (ctx, i) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: FilterChip(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: ChoiceChip(
                   label: Text(
                     _adhkar[i],
                     style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 13,
-                      color: _selectedDhikr == i
-                          ? colorScheme.primary
-                          : colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _selectedDhikr == i ? Colors.white : colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   selected: _selectedDhikr == i,
+                  selectedColor: colorScheme.primary,
+                  backgroundColor: colorScheme.surface,
                   onSelected: (_) => setState(() {
                     _selectedDhikr = i;
                     _count = 0;
                   }),
-                  selectedColor: colorScheme.primary.withOpacity(0.15),
-                  backgroundColor: colorScheme.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 40),
+          const Spacer(),
           GestureDetector(
             onTap: () => setState(() {
               _count++;
               _totalCount++;
             }),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  width: 200,
-                  height: 200,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colorScheme.primary.withOpacity(0.1), width: 8),
+                  ),
+                ),
+                Container(
+                  width: 220,
+                  height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary.withOpacity(0.25),
-                        colorScheme.secondary.withOpacity(0.1),
-                      ],
+                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.6)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    border: Border.all(
-                      color: colorScheme.primary.withOpacity(0.3),
-                      width: 2,
-                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.2),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
+                        color: colorScheme.primary.withOpacity(0.4),
+                        blurRadius: 40,
+                        offset: const Offset(0, 15),
                       ),
                     ],
                   ),
                   child: Center(
-                    child: Text(
-                      '$_count',
-                      style: TextStyle(
-                        fontSize: 64,
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.primary,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$_count',
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            fontSize: 68,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'اضغط للتسبيح',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'إجمالي التسبيحات الكلي: $_totalCount',
+              style: GoogleFonts.ibmPlexSansArabic(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            'المجموع: $_totalCount',
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurface.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildControlBtn(Icons.refresh, 'تصفير', () => setState(() {
+              _buildControlBtn(Icons.refresh_rounded, 'إعادة ضبط', () => setState(() {
                 _count = 0;
-                _totalCount = 0;
               }), colorScheme),
-              const SizedBox(width: 20),
-              _buildControlBtn(Icons.undo, 'تراجع', () => setState(() {
+              const SizedBox(width: 16),
+              _buildControlBtn(Icons.undo_rounded, 'تراجع آلي', () => setState(() {
                 if (_count > 0) _count--;
                 if (_totalCount > 0) _totalCount--;
               }), colorScheme),
             ],
           ),
+          const Spacer(),
         ],
       ),
     );
   }
 
   Widget _buildControlBtn(IconData icon, String label, VoidCallback onTap, ColorScheme colorScheme) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.primary.withOpacity(0.3)),
-          gradient: LinearGradient(
-            colors: [
-              colorScheme.primary.withOpacity(0.15),
-              colorScheme.primary.withOpacity(0.05),
-            ],
-          ),
+          color: colorScheme.surface,
+          border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
         ),
         child: Row(
           children: [
             Icon(icon, color: colorScheme.primary, size: 20),
             const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: GoogleFonts.ibmPlexSansArabic(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
