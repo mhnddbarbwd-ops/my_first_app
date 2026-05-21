@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
-import 'package:nafahat/screens/tajweed_screen.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -65,7 +64,6 @@ class _QuranScreenState extends State<QuranScreen> {
           });
         }
       }
-      // البحث في الآيات مؤجل لخطوة لاحقة
     });
   }
 
@@ -99,9 +97,6 @@ class _QuranScreenState extends State<QuranScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text('البحث في الآيات سيُضاف قريباً',
-                      style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 8),
                   Expanded(
                     child: _surahResults.isEmpty
                         ? Center(
@@ -145,121 +140,6 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
-  void _showTajweedBubble() {
-    final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 24),
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [colorScheme.primary, colorScheme.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: const Icon(Icons.spellcheck,
-                        color: Colors.white, size: 36),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'معلم التجويد',
-                    style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'راجع قراءتك مباشرة. اقرأ الآية وسيُصححها الذكاء الاصطناعي فوراً.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexSansArabic(
-                        fontSize: 14,
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const TajweedScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.play_arrow_rounded, size: 24),
-                        label: Text(
-                          'ابدأ جلسة التصحيح',
-                          style: GoogleFonts.ibmPlexSansArabic(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -277,11 +157,6 @@ class _QuranScreenState extends State<QuranScreen> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.spellcheck, color: colorScheme.primary),
-            onPressed: _showTajweedBubble,
-            tooltip: 'معلم التجويد',
-          ),
           IconButton(
             icon: Icon(Icons.flag_rounded, color: colorScheme.primary),
             onPressed: () => Navigator.push(
