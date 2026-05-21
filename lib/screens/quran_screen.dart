@@ -34,11 +34,13 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _jumpToPage(int page) {
+    // إغلاق أي قائمة مفتوحة (درج أو حوار)
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      Navigator.pop(context);
+      Navigator.pop(context); // إغلاق الدرج
     } else if (Navigator.canPop(context)) {
-      Navigator.pop(context);
+      Navigator.pop(context); // إغلاق مربع البحث
     }
+    // تغيير الصفحة الحالية
     setState(() {
       _currentPage = page;
     });
@@ -119,7 +121,7 @@ class _QuranScreenState extends State<QuranScreen> {
                                         fontWeight: FontWeight.w600)),
                                 subtitle: Text('الصفحة: ${s['page']}'),
                                 onTap: () {
-                                  Navigator.pop(ctx);
+                                  Navigator.pop(ctx);   // إغلاق الحوار أولاً
                                   _jumpToPage(s['page'] as int);
                                 },
                               );
@@ -174,7 +176,9 @@ class _QuranScreenState extends State<QuranScreen> {
         ],
       ),
       drawer: _buildNavigationDrawer(colorScheme),
+      // ✅ الحل: إجبار إعادة بناء المصحف عند تغيير الصفحة
       body: PageviewQuran(
+        key: ValueKey(_currentPage),   // <-- هذا السطر يحل مشكلة الانتقال
         initialPageNumber: _currentPage,
         onPageChanged: (page) {
           setState(() => _currentPage = page);
