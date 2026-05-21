@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
@@ -15,14 +16,20 @@ class PrayerTimesScreen extends StatefulWidget {
 class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   bool _isLoading = true;
   String _locationText = 'جاري تحديد الموقع...';
-  Map<String, String> _prayerTimes = {};
   String? _error;
 
-  // إعدادات افتراضية (يمكن تغييرها من الواجهة)
+  // الإعدادات
   CalculationMethod _selectedMethod = CalculationMethod.umm_al_qura;
   Madhab _selectedMadhab = Madhab.shafi;
   double? _currentLat;
   double? _currentLng;
+
+  // مواقيت الصلاة والعداد
+  PrayerTimes? _prayerTimes;
+  Timer? _timer;
+  String _timeUntilNext = '--:--:--';
+  Prayer _nextPrayerEnum = Prayer.none;
+  String _nextPrayerName = '';
 
   final Map<String, CalculationMethod> _calculationMethods = {
     'تقويم أم القرى (مكة / اليمن / الخليج)': CalculationMethod.umm_al_qura,
@@ -41,7 +48,13 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     _loadTimesFromGPS();
   }
 
-  // 1. تحديد الموقع تلقائياً عبر GPS
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  // 1. تحديد الموقع بالـ GPS
   Future<void> _loadTimesFromGPS() async {
     setState(() {
       _isLoading = true;
@@ -58,13 +71,13 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         if (permission == LocationPermission.denied) throw 'تم رفض صلاحية الموقع.';
       }
       if (permission == LocationPermission.deniedForever) {
-        throw 'صلاحية الموقع مرفوضة بشكل دائم. استخدم البحث اليدوي.';
+        throw 'صلاحية الموقع مرفوضة. استخدم البحث اليدوي.';
       }
 
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      
+
       _currentLat = pos.latitude;
       _currentLng = pos.longitude;
 
@@ -72,13 +85,14 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       try {
         final pm = await placemarkFromCoordinates(_currentLat!, _currentLng!);
         if (pm.isNotEmpty) {
-          place = '${pm.first.locality ?? pm.first.administrativeArea ?? ''}, ${pm.first.country ?? ''}';
+          final city = pm.first.locality ?? pm.first.administrativeArea ?? '';
+          final country = pm.first.country ?? '';
+          place = city.isNotEmpty && country.isNotEmpty ? '$city، $country' : country;
         }
       } catch (_) {}
-      
-      _locationText = place.trim() == ',' ? 'موقع محدد عبر GPS' : place;
+
+      _locationText = place;
       _calculateAdhanTimes();
-      
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -87,7 +101,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  // 2. البحث عن مدينة ودولة يدوياً (بدون GPS)
+  // 2. البحث اليدوي
   Future<void> _searchLocationManually(String city, String country) async {
     setState(() {
       _isLoading = true;
@@ -97,14 +111,14 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     try {
       final query = '$city, $country';
       final locations = await locationFromAddress(query);
-      
+
       if (locations.isNotEmpty) {
         _currentLat = locations.first.latitude;
         _currentLng = locations.first.longitude;
-        _locationText = '$city, $country';
+        _locationText = '$city، $country';
         _calculateAdhanTimes();
       } else {
-        throw 'لم يتم العثور على الموقع. تأكد من صحة اسم المدينة والدولة.';
+        throw 'لم يتم العثور على الموقع.';
       }
     } catch (e) {
       setState(() {
@@ -114,7 +128,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  // 3. حساب المواقيت باستخدام مكتبة Adhan الدقيقة
+  // 3. حساب المواقيت وبدء العداد التنازلي
   void _calculateAdhanTimes() {
     if (_currentLat == null || _currentLng == null) return;
 
@@ -122,127 +136,248 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     final params = _selectedMethod.getParameters();
     params.madhab = _selectedMadhab;
 
-    final prayerTimes = PrayerTimes.today(coordinates, params);
-
-    // استخدام intl لتنسيق الوقت بصيغة 12 ساعة مع (ص/م) بالعربية
-    String formatTime(DateTime time) {
-      return DateFormat('hh:mm a', 'ar').format(time);
-    }
+    final pt = PrayerTimes.today(coordinates, params);
 
     setState(() {
-      _prayerTimes = {
-        'الفجر': formatTime(prayerTimes.fajr),
-        'الشروق': formatTime(prayerTimes.sunrise),
-        'الظهر': formatTime(prayerTimes.dhuhr),
-        'العصر': formatTime(prayerTimes.asr),
-        'المغرب': formatTime(prayerTimes.maghrib),
-        'العشاء': formatTime(prayerTimes.isha),
-      };
+      _prayerTimes = pt;
       _isLoading = false;
+    });
+
+    _startCountdownTimer();
+  }
+
+  // 4. العداد التنازلي
+  void _startCountdownTimer() {
+    _timer?.cancel();
+    _updateCountdown(); // تحديث فوري
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateCountdown();
     });
   }
 
-  // 4. نافذة منبثقة لضبط الموقع والإعدادات
-  void _showSettingsDialog() {
+  void _updateCountdown() {
+    if (_prayerTimes == null || _currentLat == null || _currentLng == null) return;
+
+    final now = DateTime.now();
+    DateTime? nextTime;
+
+    // إذا كانت الصلاة القادمة هي "لا شيء" (يعني أن العشاء قد مرت)، نحسب فجر اليوم التالي
+    if (_prayerTimes!.nextPrayer() == Prayer.none) {
+      final tomorrow = now.add(const Duration(days: 1));
+      final tomorrowParams = _selectedMethod.getParameters();
+      tomorrowParams.madhab = _selectedMadhab;
+      final tomorrowPt = PrayerTimes(
+        Coordinates(_currentLat!, _currentLng!),
+        DateComponents.from(tomorrow),
+        tomorrowParams,
+      );
+      nextTime = tomorrowPt.fajr;
+      _nextPrayerEnum = Prayer.fajr;
+      _nextPrayerName = 'الفجر';
+    } else {
+      nextTime = _prayerTimes!.timeForPrayer(_prayerTimes!.nextPrayer());
+      _nextPrayerEnum = _prayerTimes!.nextPrayer();
+      _nextPrayerName = _getArabicPrayerName(_nextPrayerEnum);
+    }
+
+    if (nextTime != null) {
+      final diff = nextTime.difference(now);
+      if (diff.isNegative) {
+        // إذا انتهى الوقت، أعد الحساب للصلاة التي تليها
+        _calculateAdhanTimes();
+      } else {
+        final hours = diff.inHours.toString().padLeft(2, '0');
+        final minutes = (diff.inMinutes % 60).toString().padLeft(2, '0');
+        final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
+        if (mounted) {
+          setState(() {
+            _timeUntilNext = '$hours:$minutes:$seconds';
+          });
+        }
+      }
+    }
+  }
+
+  String _getArabicPrayerName(Prayer prayer) {
+    switch (prayer) {
+      case Prayer.fajr: return 'الفجر';
+      case Prayer.sunrise: return 'الشروق';
+      case Prayer.dhuhr: return 'الظهر';
+      case Prayer.asr: return 'العصر';
+      case Prayer.maghrib: return 'المغرب';
+      case Prayer.isha: return 'العشاء';
+      case Prayer.none: return '';
+    }
+  }
+
+  // ------------------------- واجهة المستخدم -------------------------
+
+  // نافذة الإعدادات (Bottom Sheet) الاحترافية
+  void _showSettingsSheet() {
     final cityController = TextEditingController();
     final countryController = TextEditingController();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
+        final theme = Theme.of(context);
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Text('إعدادات المواقيت', 
-                  style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold, fontSize: 20)),
-              content: SingleChildScrollView(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, spreadRadius: 5),
+                ],
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('البحث اليدوي عن الموقع:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: countryController,
-                      decoration: const InputDecoration(
-                        labelText: 'الدولة (مثال: اليمن)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.flag),
+                    Center(
+                      child: Container(
+                        width: 50,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Text('إعدادات الموقع والمواقيت',
+                        style: GoogleFonts.ibmPlexSansArabic(fontSize: 22, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                    const SizedBox(height: 24),
+
+                    // قسم البحث
+                    Text('البحث اليدوي:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 16)),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: cityController,
-                      decoration: const InputDecoration(
-                        labelText: 'المدينة (مثال: عدن)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.location_city),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: countryController,
+                            decoration: InputDecoration(
+                              hintText: 'الدولة (اليمن)',
+                              prefixIcon: const Icon(Icons.flag_rounded),
+                              filled: true,
+                              fillColor: theme.colorScheme.surface,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: cityController,
+                            decoration: InputDecoration(
+                              hintText: 'المدينة (صنعاء)',
+                              prefixIcon: const Icon(Icons.location_city_rounded),
+                              filled: true,
+                              fillColor: theme.colorScheme.surface,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
                         onPressed: () {
                           if (countryController.text.isNotEmpty && cityController.text.isNotEmpty) {
                             Navigator.pop(context);
                             _searchLocationManually(cityController.text.trim(), countryController.text.trim());
                           }
                         },
-                        icon: const Icon(Icons.search),
-                        label: const Text('بحث عن الموقع'),
+                        child: Text('تحديث الموقع', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+
+                    const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider()),
+
+                    // قسم طرق الحساب
+                    Text('طريقة الحساب الفلكي:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 16)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<CalculationMethod>(
+                          isExpanded: true,
+                          value: _selectedMethod,
+                          icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.primary),
+                          items: _calculationMethods.entries.map((e) {
+                            return DropdownMenuItem(
+                              value: e.value,
+                              child: Text(e.key, style: GoogleFonts.ibmPlexSansArabic(fontSize: 14)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setSheetState(() => _selectedMethod = val);
+                              setState(() {
+                                _selectedMethod = val;
+                                _calculateAdhanTimes();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                    Text('المذهب الفقهي (لصلاة العصر):', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 16)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<Madhab>(
+                          isExpanded: true,
+                          value: _selectedMadhab,
+                          icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.primary),
+                          items: const [
+                            DropdownMenuItem(value: Madhab.shafi, child: Text('شافعي، مالكي، حنبلي (الجمهور)')),
+                            DropdownMenuItem(value: Madhab.hanafi, child: Text('حنفي')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setSheetState(() => _selectedMadhab = val);
+                              setState(() {
+                                _selectedMadhab = val;
+                                _calculateAdhanTimes();
+                              });
+                            }
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Text('طريقة الحساب:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
-                    DropdownButton<CalculationMethod>(
-                      isExpanded: true,
-                      value: _selectedMethod,
-                      items: _calculationMethods.entries.map((e) {
-                        return DropdownMenuItem(
-                          value: e.value,
-                          child: Text(e.key, style: GoogleFonts.ibmPlexSansArabic(fontSize: 14)),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => _selectedMethod = val);
-                          setState(() {
-                            _selectedMethod = val;
-                            _calculateAdhanTimes();
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text('المذهب الفقهي (لصلاة العصر):', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
-                    DropdownButton<Madhab>(
-                      isExpanded: true,
-                      value: _selectedMadhab,
-                      items: const [
-                        DropdownMenuItem(value: Madhab.shafi, child: Text('شافعي، مالكي، حنبلي (الجمهور)')),
-                        DropdownMenuItem(value: Madhab.hanafi, child: Text('حنفي')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => _selectedMadhab = val);
-                          setState(() {
-                            _selectedMadhab = val;
-                            _calculateAdhanTimes();
-                          });
-                        }
-                      },
-                    ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('إغلاق', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
-                ),
-              ],
             );
           }
         );
@@ -257,18 +392,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('مواقيت الصلاة',
-            style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+        title: Text('مواقيت الصلاة', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_rounded),
-            tooltip: 'إعدادات الموقع والحساب',
-            onPressed: _showSettingsDialog,
-          ),
-          IconButton(
-            icon: const Icon(Icons.my_location_rounded),
-            tooltip: 'استخدام الموقع الحالي',
-            onPressed: _loadTimesFromGPS,
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'إعدادات المواقيت',
+            onPressed: _showSettingsSheet,
           ),
         ],
       ),
@@ -279,101 +408,175 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                 children: [
                   CircularProgressIndicator(color: colorScheme.primary),
                   const SizedBox(height: 16),
-                  Text('جاري حساب المواقيت بدقة...',
-                      style: GoogleFonts.ibmPlexSansArabic()),
+                  Text('جاري التجهيز...', style: GoogleFonts.ibmPlexSansArabic()),
                 ],
               ),
             )
           : _error != null
-              ? Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 48, color: colorScheme.error),
-                        const SizedBox(height: 16),
-                        Text(_error!, textAlign: TextAlign.center,
-                            style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, color: colorScheme.error)),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _showSettingsDialog,
-                          icon: const Icon(Icons.settings),
-                          label: Text('تحديد الموقع يدوياً', style: GoogleFonts.ibmPlexSansArabic()),
-                        )
-                      ],
-                    ),
+              ? _buildErrorView(colorScheme)
+              : _buildMainContent(theme),
+    );
+  }
+
+  Widget _buildErrorView(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_off_rounded, size: 64, color: colorScheme.error.withOpacity(0.8)),
+            const SizedBox(height: 16),
+            Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.ibmPlexSansArabic(fontSize: 16)),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _showSettingsSheet,
+              icon: const Icon(Icons.search_rounded),
+              label: Text('البحث يدوياً', style: GoogleFonts.ibmPlexSansArabic()),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContent(ThemeData theme) {
+    if (_prayerTimes == null) return const SizedBox();
+
+    final prayers = [
+      {'enum': Prayer.fajr, 'name': 'الفجر', 'time': _prayerTimes!.fajr, 'icon': Icons.nightlight_round},
+      {'enum': Prayer.sunrise, 'name': 'الشروق', 'time': _prayerTimes!.sunrise, 'icon': Icons.wb_twilight_rounded},
+      {'enum': Prayer.dhuhr, 'name': 'الظهر', 'time': _prayerTimes!.dhuhr, 'icon': Icons.wb_sunny_rounded},
+      {'enum': Prayer.asr, 'name': 'العصر', 'time': _prayerTimes!.asr, 'icon': Icons.sunny},
+      {'enum': Prayer.maghrib, 'name': 'المغرب', 'time': _prayerTimes!.maghrib, 'icon': Icons.brightness_6_rounded},
+      {'enum': Prayer.isha, 'name': 'العشاء', 'time': _prayerTimes!.isha, 'icon': Icons.brightness_3_rounded},
+    ];
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // البطاقة العلوية الفاخرة (Hero Card)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(color: theme.colorScheme.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.location_on_rounded, color: theme.colorScheme.onPrimary, size: 18),
+                    const SizedBox(width: 8),
+                    Text(_locationText, style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary, fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text('الصلاة القادمة', style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary.withOpacity(0.8), fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(_nextPrayerName, style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary, fontSize: 36, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onPrimary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // بطاقة الموقع الحالي
-                      InkWell(
-                        onTap: _showSettingsDialog,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.location_on_rounded, color: colorScheme.primary),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(_locationText,
-                                    style: GoogleFonts.ibmPlexSansArabic(
-                                        fontWeight: FontWeight.bold, fontSize: 16)),
-                              ),
-                              Icon(Icons.edit_location_alt_rounded, color: colorScheme.primary, size: 20),
-                            ],
-                          ),
-                        ),
+                      Icon(Icons.timer_outlined, color: theme.colorScheme.onPrimary, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        _timeUntilNext,
+                        style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
                       ),
-                      const SizedBox(height: 24),
-                      // قائمة مواقيت الصلاة
-                      ..._prayerTimes.entries.map((e) {
-                        final name = e.key;
-                        final time = e.value;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surface,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.access_time_rounded, color: colorScheme.secondary),
-                                  const SizedBox(width: 12),
-                                  Text(name,
-                                      style: GoogleFonts.ibmPlexSansArabic(
-                                          fontSize: 18, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              Text(time,
-                                  style: GoogleFonts.ibmPlexSansArabic(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: colorScheme.primary)),
-                            ],
-                          ),
-                        );
-                      }),
                     ],
                   ),
                 ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // قائمة الصلوات المنسقة
+          ...prayers.map((p) {
+            final prayerEnum = p['enum'] as Prayer;
+            final isNext = prayerEnum == _nextPrayerEnum;
+            final timeDate = p['time'] as DateTime;
+            final formattedTime = DateFormat('hh:mm a', 'ar').format(timeDate);
+            
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              decoration: BoxDecoration(
+                color: isNext ? theme.colorScheme.primary : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isNext ? Colors.transparent : theme.colorScheme.primary.withOpacity(0.1),
+                  width: 1.5,
+                ),
+                boxShadow: isNext ? [
+                  BoxShadow(color: theme.colorScheme.primary.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 5))
+                ] : [
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isNext ? theme.colorScheme.onPrimary.withOpacity(0.2) : theme.colorScheme.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          p['icon'] as IconData,
+                          color: isNext ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        p['name'] as String,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          fontSize: 18,
+                          fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
+                          color: isNext ? theme.colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    formattedTime,
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isNext ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
