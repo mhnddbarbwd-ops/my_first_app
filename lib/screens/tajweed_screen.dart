@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:qcf_quran/quran_page.dart';
+import 'package:qcf_quran/qcf_quran.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nafahat/services/gemini_service.dart';
@@ -37,7 +37,6 @@ class _TajweedScreenState extends State<TajweedScreen> {
   }
 
   Future<void> _startListening() async {
-    // 1. طلب إذن الميكروفون
     final micStatus = await Permission.microphone.request();
     if (!micStatus.isGranted) {
       if (mounted) {
@@ -48,7 +47,6 @@ class _TajweedScreenState extends State<TajweedScreen> {
       return;
     }
 
-    // 2. التحقق من توفر خدمة التعرف الصوتي
     if (!_speech.isAvailable) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,16 +62,15 @@ class _TajweedScreenState extends State<TajweedScreen> {
       _errors = [];
     });
 
-    // 3. بدء الاستماع مع إعدادات مناسبة للعربية
     await _speech.listen(
       onResult: (result) {
         setState(() {
           _recognizedText = result.recognizedWords;
         });
       },
-      listenFor: const Duration(seconds: 30),   // أقصى مدة 30 ثانية
-      pauseFor: const Duration(seconds: 5),     // يتوقف تلقائيًا بعد 5 ثوانٍ من الصمت
-      localeId: 'ar',                           // اللغة العربية
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 5),
+      localeId: 'ar',
     );
   }
 
@@ -90,7 +87,6 @@ class _TajweedScreenState extends State<TajweedScreen> {
       return;
     }
 
-    // 4. إرسال النص إلى Gemini
     setState(() => _isLoading = true);
     const correctVerse = 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ';
     final result = await GeminiService.analyzeRecitation(
@@ -126,7 +122,10 @@ class _TajweedScreenState extends State<TajweedScreen> {
             flex: 3,
             child: Stack(
               children: [
-                const QuranPage(pageNumber: 1),
+                PageviewQuran(
+                  initialPageNumber: 1,
+                  onPageChanged: (_) {},
+                ),
                 if (_hideText)
                   Positioned.fill(
                     child: Container(

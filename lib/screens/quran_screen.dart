@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
+import 'package:qcf_quran/qcf_quran.dart';
+import 'package:quran/quran.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:nafahat/screens/tajweed_screen.dart';
-import 'package:qcf_quran/qcf_quran.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -45,13 +45,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   void _jumpToPage(int page) {
-    // إغلاق الدرج أو القائمة المنبثقة أولاً
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      Navigator.pop(context); // إغلاق الدرج
+      Navigator.pop(context);
     } else if (Navigator.canPop(context)) {
-      Navigator.pop(context); // إغلاق مربع حوار البحث
+      Navigator.pop(context);
     }
-    // ضبط الصفحة الجديدة
     setState(() {
       _currentPage = page;
     });
@@ -80,20 +78,15 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       }
 
       try {
-        final results = searchWords(query.trim());
-        if (results['result'] != null && (results['result'] as List).isNotEmpty) {
-          _ayahResults = (results['result'] as List).map<Map<String, dynamic>>((r) {
-            final surah = r['suraNumber'] as int;
-            final verse = r['verseNumber'] as int;
-            final page = getPageNumber(surah, verse);
-            return {
-              'surah': surah,
-              'verse': verse,
-              'page': page,
-              'surahName': getSurahNameArabic(surah),
-            };
-          }).toList();
-        }
+        final results = searchVerses(query.trim());
+        _ayahResults = results.map<Map<String, dynamic>>((r) {
+          return {
+            'surah': r.surahNumber,
+            'verse': r.verseNumber,
+            'page': getPageNumber(r.surahNumber, r.verseNumber),
+            'surahName': getSurahNameArabic(r.surahNumber),
+          };
+        }).toList();
       } catch (_) {
         _ayahResults = [];
       }
@@ -276,7 +269,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(
-                      'راجع قراءتك مباشرة. اقرأ الآية وسيُصححها الذكاء الاصطناعي فوراً.\nالكلمات الصحيحة تظهر باللون الأخضر، والأخطاء باللون الأحمر.',
+                      'راجع قراءتك مباشرة. اقرأ الآية وسيُصححها الذكاء الاصطناعي فوراً.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.ibmPlexSansArabic(
                         fontSize: 14,
