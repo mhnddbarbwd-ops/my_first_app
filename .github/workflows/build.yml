@@ -1,4 +1,4 @@
-name: Build and Release APK
+name: Build & Distribute Android APK
 on: [push]
 jobs:
   build:
@@ -16,11 +16,7 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/nafahat-release.keystore
       - run: flutter build apk --debug
-      - name: Create Release and Upload APK
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          tag_name: release-${{ github.run_number }}
-          name: Build ${{ github.run_number }}
-          files: build/app/outputs/flutter-apk/app-debug.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: app-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
