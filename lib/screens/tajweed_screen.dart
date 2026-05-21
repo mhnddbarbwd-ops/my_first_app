@@ -63,11 +63,11 @@ class _TajweedScreenState extends State<TajweedScreen> {
       ),
       body: Column(
         children: [
-          // الجزء العلوي: المصحف (أو RecitationScreen)
+          // الجزء العلوي: المصحف (RecitationScreen)
           Expanded(
             flex: 3,
-            // التعديل هنا: إزالة const وإضافة الـ UniqueKey لتفادي تصادم تهيئة الـ AudioRecordingService المتواجد داخل المكتبة
-            child: RecitationScreen(key: UniqueKey()), 
+            // استخدام const وإزالة UniqueKey لمنع إعادة التهيئة الداخلية
+            child: const RecitationScreen(),
           ),
           // فاصل
           Divider(color: colorScheme.primary.withOpacity(0.2), height: 1),
