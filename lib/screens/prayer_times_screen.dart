@@ -1,8 +1,9 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:adhan/adhan.dart';
+import 'package:intl/intl.dart';
 
 class PrayerTimesScreen extends StatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -17,58 +18,67 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   Map<String, String> _prayerTimes = {};
   String? _error;
 
+  // إعدادات افتراضية (يمكن تغييرها من الواجهة)
+  CalculationMethod _selectedMethod = CalculationMethod.umm_al_qura;
+  Madhab _selectedMadhab = Madhab.shafi;
+  double? _currentLat;
+  double? _currentLng;
+
+  final Map<String, CalculationMethod> _calculationMethods = {
+    'تقويم أم القرى (مكة / اليمن / الخليج)': CalculationMethod.umm_al_qura,
+    'رابطة العالم الإسلامي': CalculationMethod.muslim_world_league,
+    'الهيئة المصرية العامة للمساحة': CalculationMethod.egyptian,
+    'جامعة العلوم الإسلامية (كراتشي)': CalculationMethod.karachi,
+    'الاتحاد الإسلامي بأمريكا الشمالية': CalculationMethod.north_america,
+    'دبي / الإمارات': CalculationMethod.dubai,
+    'الكويت': CalculationMethod.kuwait,
+    'قطر': CalculationMethod.qatar,
+  };
+
   @override
   void initState() {
     super.initState();
-    _loadTimes();
+    _loadTimesFromGPS();
   }
 
-  Future<void> _loadTimes() async {
+  // 1. تحديد الموقع تلقائياً عبر GPS
+  Future<void> _loadTimesFromGPS() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      // --- GPS ---
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) throw 'GPS غير مفعل. لا يمكن حساب المواقيت.';
+      if (!serviceEnabled) throw 'GPS غير مفعل. قم بتفعيله أو أدخل الموقع يدوياً.';
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'تم رفض صلاحية الموقع.';
-        }
+        if (permission == LocationPermission.denied) throw 'تم رفض صلاحية الموقع.';
       }
       if (permission == LocationPermission.deniedForever) {
-        throw 'صلاحية الموقع مرفوضة بشكل دائم.';
+        throw 'صلاحية الموقع مرفوضة بشكل دائم. استخدم البحث اليدوي.';
       }
 
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      final lat = pos.latitude;
-      final lng = pos.longitude;
-      final tzOffset = (lng / 15).round(); // تقريب المنطقة الزمنية
+      
+      _currentLat = pos.latitude;
+      _currentLng = pos.longitude;
 
-      // --- اسم المكان ---
       String place = 'موقعك الحالي';
       try {
-        final pm = await placemarkFromCoordinates(lat, lng);
+        final pm = await placemarkFromCoordinates(_currentLat!, _currentLng!);
         if (pm.isNotEmpty) {
-          place = '${pm.first.locality ?? ''}, ${pm.first.country ?? ''}';
+          place = '${pm.first.locality ?? pm.first.administrativeArea ?? ''}, ${pm.first.country ?? ''}';
         }
       } catch (_) {}
-      _locationText = place;
-
-      // --- حساب المواقيت فلكيًا ---
-      final times = _computePrayerTimes(lat, lng, tzOffset);
-
-      setState(() {
-        _prayerTimes = times;
-        _isLoading = false;
-      });
+      
+      _locationText = place.trim() == ',' ? 'موقع محدد عبر GPS' : place;
+      _calculateAdhanTimes();
+      
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -77,98 +87,168 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  // ---------------------- الخوارزمية الفلكية ----------------------
-  Map<String, String> _computePrayerTimes(double lat, double lng, int tzOffset) {
-    final date = DateTime.now();
-    final jd = _julianDate(date.year, date.month, date.day);
-    final d = jd - 2451545.0;
+  // 2. البحث عن مدينة ودولة يدوياً (بدون GPS)
+  Future<void> _searchLocationManually(String city, String country) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-    final g = (357.529 + 0.98560028 * d) % 360;
-    final q = (280.459 + 0.98564736 * d) % 360;
-    final L = (q + 1.915 * _sin(g) + 0.020 * _sin(2 * g)) % 360;
-    final R = 1.00014 - 0.01671 * _cos(g) - 0.00014 * _cos(2 * g);
-    final e = 23.439 - 0.00000036 * d;
-
-    double sunEq, delta, haFajr, haIsha;
-    double haSunrise = _hourAngle(90.833, e, decl(L, e), lat, true); // الشروق
-    double haDhuhr = _hourAngle(0, e, decl(L, e), lat, false); // الظهر
-    double haAsrShafii = _hourAngleAsr(lat, decl(L, e), 1);
-    double haMaghrib = _hourAngle(90.833, e, decl(L, e), lat, false); // المغرب
-
-    // زوايا الفجر والعشاء (تختلف حسب الطريقة: هنا أم القرى التقريبي)
-    haFajr = _hourAngle(108, e, decl(L, e), lat, true); // 18.5 درجة لأم القرى
-    haIsha = _hourAngle(108, e, decl(L, e), lat, false); // 18.5 درجة
-
-    double noon = (720 - 4 * lng - _equationOfTime(d) + tzOffset * 60) / 1440;
-    double sunrise = noon - haSunrise * 4 / 1440;
-    double sunset = noon + haSunrise * 4 / 1440;
-    double fajr = noon - haFajr * 4 / 1440;
-    double isha = noon + haIsha * 4 / 1440;
-    double dhuhr = noon;
-    double asr = noon + haAsrShafii * 4 / 1440;
-    double maghrib = sunset;
-
-    return {
-      'الفجر': _fmtTime(fajr),
-      'الشروق': _fmtTime(sunrise),
-      'الظهر': _fmtTime(dhuhr),
-      'العصر': _fmtTime(asr),
-      'المغرب': _fmtTime(maghrib),
-      'العشاء': _fmtTime(isha),
-    };
+    try {
+      final query = '$city, $country';
+      final locations = await locationFromAddress(query);
+      
+      if (locations.isNotEmpty) {
+        _currentLat = locations.first.latitude;
+        _currentLng = locations.first.longitude;
+        _locationText = '$city, $country';
+        _calculateAdhanTimes();
+      } else {
+        throw 'لم يتم العثور على الموقع. تأكد من صحة اسم المدينة والدولة.';
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'تعذر العثور على الموقع، يرجى كتابة الاسم بشكل صحيح (مثال: صنعاء، اليمن).';
+        _isLoading = false;
+      });
+    }
   }
 
-  double _hourAngle(double angle, double e, double delta, double lat, bool isRise) {
-    final num = _cos(angle) - _sin(lat) * _sin(delta);
-    final den = _cos(lat) * _cos(delta);
-    final val = num / den;
-    if (val > 1 || val < -1) return isRise ? 0 : 180;
-    return (isRise ? 360 - _acos(val) : _acos(val)) / 15;
+  // 3. حساب المواقيت باستخدام مكتبة Adhan الدقيقة
+  void _calculateAdhanTimes() {
+    if (_currentLat == null || _currentLng == null) return;
+
+    final coordinates = Coordinates(_currentLat!, _currentLng!);
+    final params = _selectedMethod.getParameters();
+    params.madhab = _selectedMadhab;
+
+    final prayerTimes = PrayerTimes.today(coordinates, params);
+
+    // استخدام intl لتنسيق الوقت بصيغة 12 ساعة مع (ص/م) بالعربية
+    String formatTime(DateTime time) {
+      return DateFormat('hh:mm a', 'ar').format(time);
+    }
+
+    setState(() {
+      _prayerTimes = {
+        'الفجر': formatTime(prayerTimes.fajr),
+        'الشروق': formatTime(prayerTimes.sunrise),
+        'الظهر': formatTime(prayerTimes.dhuhr),
+        'العصر': formatTime(prayerTimes.asr),
+        'المغرب': formatTime(prayerTimes.maghrib),
+        'العشاء': formatTime(prayerTimes.isha),
+      };
+      _isLoading = false;
+    });
   }
 
-  double _hourAngleAsr(double lat, double delta, int shadowLength) {
-    final num = _sin(_acot(shadowLength + _tan((lat - delta).abs()))) - _sin(lat) * _sin(delta);
-    final den = _cos(lat) * _cos(delta);
-    final val = num / den;
-    if (val > 1 || val < -1) return 0;
-    return _acos(val) / 15;
-  }
+  // 4. نافذة منبثقة لضبط الموقع والإعدادات
+  void _showSettingsDialog() {
+    final cityController = TextEditingController();
+    final countryController = TextEditingController();
 
-  double decl(double L, double e) {
-    return _asin(_sin(e) * _sin(L));
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text('إعدادات المواقيت', 
+                  style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold, fontSize: 20)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('البحث اليدوي عن الموقع:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: countryController,
+                      decoration: const InputDecoration(
+                        labelText: 'الدولة (مثال: اليمن)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.flag),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: cityController,
+                      decoration: const InputDecoration(
+                        labelText: 'المدينة (مثال: عدن)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.location_city),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (countryController.text.isNotEmpty && cityController.text.isNotEmpty) {
+                            Navigator.pop(context);
+                            _searchLocationManually(cityController.text.trim(), countryController.text.trim());
+                          }
+                        },
+                        icon: const Icon(Icons.search),
+                        label: const Text('بحث عن الموقع'),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text('طريقة الحساب:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+                    DropdownButton<CalculationMethod>(
+                      isExpanded: true,
+                      value: _selectedMethod,
+                      items: _calculationMethods.entries.map((e) {
+                        return DropdownMenuItem(
+                          value: e.value,
+                          child: Text(e.key, style: GoogleFonts.ibmPlexSansArabic(fontSize: 14)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => _selectedMethod = val);
+                          setState(() {
+                            _selectedMethod = val;
+                            _calculateAdhanTimes();
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text('المذهب الفقهي (لصلاة العصر):', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+                    DropdownButton<Madhab>(
+                      isExpanded: true,
+                      value: _selectedMadhab,
+                      items: const [
+                        DropdownMenuItem(value: Madhab.shafi, child: Text('شافعي، مالكي، حنبلي (الجمهور)')),
+                        DropdownMenuItem(value: Madhab.hanafi, child: Text('حنفي')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => _selectedMadhab = val);
+                          setState(() {
+                            _selectedMadhab = val;
+                            _calculateAdhanTimes();
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('إغلاق', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
   }
-
-  double _equationOfTime(double d) {
-    final g = (357.529 + 0.98560028 * d) % 360;
-    final q = (280.459 + 0.98564736 * d) % 360;
-    final L = (q + 1.915 * _sin(g) + 0.020 * _sin(2 * g)) % 360;
-    final e = 23.439 - 0.00000036 * d;
-    final y = _tan(e / 2) * _tan(e / 2);
-    return 4 * _toDeg(y * _sin(2 * L) - 2 * 0.01671 * _sin(g) + 4 * 0.01671 * y * _sin(g) * _cos(2 * L) - 0.5 * y * y * _sin(4 * L) - 1.25 * 0.01671 * 0.01671 * _sin(2 * g));
-  }
-
-  double _julianDate(int year, int month, int day) {
-    if (month <= 2) { year -= 1; month += 12; }
-    final A = (year / 100).floor();
-    final B = 2 - A + (A / 4).floor();
-    return (365.25 * (year + 4716)).floor() + (30.6001 * (month + 1)).floor() + day + B - 1524.5;
-  }
-
-  String _fmtTime(double fraction) {
-    final totalMinutes = (fraction * 24 * 60).round();
-    final hours = totalMinutes ~/ 60;
-    final minutes = totalMinutes % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
-  }
-
-  double _sin(dynamic x) => sin(_toRad(x));
-  double _cos(dynamic x) => cos(_toRad(x));
-  double _tan(dynamic x) => tan(_toRad(x));
-  double _asin(double x) => asin(x.clamp(-1, 1));
-  double _acos(double x) => acos(x.clamp(-1, 1));
-  double _acot(double x) => pi / 2 - atan(x);
-  double _toRad(dynamic x) => (x is double ? x : x.toDouble()) * pi / 180;
-  double _toDeg(dynamic x) => (x is double ? x : x.toDouble()) * 180 / pi;
 
   @override
   Widget build(BuildContext context) {
@@ -181,8 +261,14 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadTimes,
+            icon: const Icon(Icons.settings_rounded),
+            tooltip: 'إعدادات الموقع والحساب',
+            onPressed: _showSettingsDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.my_location_rounded),
+            tooltip: 'استخدام الموقع الحالي',
+            onPressed: _loadTimesFromGPS,
           ),
         ],
       ),
@@ -193,7 +279,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                 children: [
                   CircularProgressIndicator(color: colorScheme.primary),
                   const SizedBox(height: 16),
-                  Text('جاري حساب المواقيت...',
+                  Text('جاري حساب المواقيت بدقة...',
                       style: GoogleFonts.ibmPlexSansArabic()),
                 ],
               ),
@@ -202,33 +288,54 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               ? Padding(
                   padding: const EdgeInsets.all(24),
                   child: Center(
-                    child: Text(_error!, textAlign: TextAlign.center,
-                        style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, color: colorScheme.error)),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+                        const SizedBox(height: 16),
+                        Text(_error!, textAlign: TextAlign.center,
+                            style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, color: colorScheme.error)),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _showSettingsDialog,
+                          icon: const Icon(Icons.settings),
+                          label: Text('تحديد الموقع يدوياً', style: GoogleFonts.ibmPlexSansArabic()),
+                        )
+                      ],
+                    ),
                   ),
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.my_location_rounded, color: colorScheme.primary),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(_locationText,
-                                  style: GoogleFonts.ibmPlexSansArabic(
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          ],
+                      // بطاقة الموقع الحالي
+                      InkWell(
+                        onTap: _showSettingsDialog,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.location_on_rounded, color: colorScheme.primary),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(_locationText,
+                                    style: GoogleFonts.ibmPlexSansArabic(
+                                        fontWeight: FontWeight.bold, fontSize: 16)),
+                              ),
+                              Icon(Icons.edit_location_alt_rounded, color: colorScheme.primary, size: 20),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
+                      // قائمة مواقيت الصلاة
                       ..._prayerTimes.entries.map((e) {
                         final name = e.key;
                         final time = e.value;
@@ -238,9 +345,9 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                           decoration: BoxDecoration(
                             color: colorScheme.surface,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: colorScheme.primary.withOpacity(0.05)),
+                            border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)
+                              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))
                             ],
                           ),
                           child: Row(
@@ -252,7 +359,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                                   const SizedBox(width: 12),
                                   Text(name,
                                       style: GoogleFonts.ibmPlexSansArabic(
-                                          fontSize: 16, fontWeight: FontWeight.bold)),
+                                          fontSize: 18, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               Text(time,
