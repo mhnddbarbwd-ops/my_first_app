@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qcf_quran/qcf_quran.dart';
-import 'package:quran/quran.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:nafahat/screens/tajweed_screen.dart';
@@ -14,14 +13,12 @@ class QuranScreen extends StatefulWidget {
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
-class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin {
+class _QuranScreenState extends State<QuranScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
-  late TabController _searchTabController;
   int _currentPage = 1;
 
   List<Map<String, dynamic>> _surahResults = [];
-  List<Map<String, dynamic>> _ayahResults = [];
 
   static const Map<int, int> _juzStartPages = {
     1: 1, 2: 22, 3: 42, 4: 62, 5: 82, 6: 102,
@@ -32,15 +29,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   };
 
   @override
-  void initState() {
-    super.initState();
-    _searchTabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
-    _searchTabController.dispose();
     super.dispose();
   }
 
@@ -59,7 +49,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (query.trim().isEmpty) {
       setState(() {
         _surahResults = [];
-        _ayahResults = [];
       });
       return;
     }
@@ -76,27 +65,13 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           });
         }
       }
-
-      try {
-        final results = searchVerses(query.trim());
-        _ayahResults = results.map<Map<String, dynamic>>((r) {
-          return {
-            'surah': r.surahNumber,
-            'verse': r.verseNumber,
-            'page': getPageNumber(r.surahNumber, r.verseNumber),
-            'surahName': getSurahNameArabic(r.surahNumber),
-          };
-        }).toList();
-      } catch (_) {
-        _ayahResults = [];
-      }
+      // البحث في الآيات مؤجل لخطوة لاحقة
     });
   }
 
   void _showSearchDialog() {
     _searchController.clear();
     _surahResults = [];
-    _ayahResults = [];
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -118,79 +93,43 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       setDialogState(() {});
                     },
                     decoration: InputDecoration(
-                      hintText: 'اكتب كلمة أو حرف للبحث...',
+                      hintText: 'اكتب اسم سورة للبحث...',
                       prefixIcon: Icon(Icons.search,
                           color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TabBar(
-                    controller: _searchTabController,
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    tabs: const [
-                      Tab(text: 'السور'),
-                      Tab(text: 'الآيات'),
-                    ],
-                  ),
+                  Text('البحث في الآيات سيُضاف قريباً',
+                      style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 8),
                   Expanded(
-                    child: TabBarView(
-                      controller: _searchTabController,
-                      children: [
-                        _surahResults.isEmpty
-                            ? Center(
-                                child: Text('اكتب للبحث عن سورة',
-                                    style: TextStyle(color: Colors.grey)))
-                            : ListView.builder(
-                                itemCount: _surahResults.length,
-                                itemBuilder: (context, i) {
-                                  final s = _surahResults[i];
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.1),
-                                      child: Text('${s['number']}'),
-                                    ),
-                                    title: Text(s['name'],
-                                        style: GoogleFonts.ibmPlexSansArabic(
-                                            fontWeight: FontWeight.w600)),
-                                    subtitle: Text('الصفحة: ${s['page']}'),
-                                    onTap: () {
-                                      Navigator.pop(ctx);
-                                      _jumpToPage(s['page'] as int);
-                                    },
-                                  );
+                    child: _surahResults.isEmpty
+                        ? Center(
+                            child: Text('اكتب للبحث عن سورة',
+                                style: TextStyle(color: Colors.grey)))
+                        : ListView.builder(
+                            itemCount: _surahResults.length,
+                            itemBuilder: (context, i) {
+                              final s = _surahResults[i];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.1),
+                                  child: Text('${s['number']}'),
+                                ),
+                                title: Text(s['name'],
+                                    style: GoogleFonts.ibmPlexSansArabic(
+                                        fontWeight: FontWeight.w600)),
+                                subtitle: Text('الصفحة: ${s['page']}'),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _jumpToPage(s['page'] as int);
                                 },
-                              ),
-                        _ayahResults.isEmpty
-                            ? Center(
-                                child: Text('اكتب للبحث في الآيات',
-                                    style: TextStyle(color: Colors.grey)))
-                            : ListView.builder(
-                                itemCount: _ayahResults.length,
-                                itemBuilder: (context, i) {
-                                  final a = _ayahResults[i];
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .secondary
-                                          .withOpacity(0.1),
-                                      child: Text('${a['surah']}'),
-                                    ),
-                                    title: Text(
-                                        'سورة ${a['surahName']} - آية ${a['verse']}'),
-                                    subtitle: Text('الصفحة: ${a['page']}'),
-                                    onTap: () {
-                                      Navigator.pop(ctx);
-                                      _jumpToPage(a['page'] as int);
-                                    },
-                                  );
-                                },
-                              ),
-                      ],
-                    ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
