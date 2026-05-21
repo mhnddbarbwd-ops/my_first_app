@@ -18,7 +18,7 @@ dependencies:
   audioplayers: ^6.0.0
   qcf_quran: ^0.0.5
   hijri_date: ^1.1.0
-  prayer_times: ^1.0.0
+  flutter_prayer_time_calculator: ^0.0.2
   geolocator: ^14.0.2
   flutter_qiblah: ^3.2.0
   firebase_core: ^3.1.0

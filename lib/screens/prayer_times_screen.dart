@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:prayer_times/prayer_times.dart' as pt;
+import 'package:flutter_prayer_time_calculator/flutter_prayer_time_calculator.dart';
 
 class PrayerTimesScreen extends StatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -14,9 +14,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
   String _currentLocationName = 'جاري تحديد الموقع...';
-  Map<String, String> _prayerTimes = {};
+  Map<PrayerTime, String> _prayerTimes = {};
 
-  pt.CalculationMethod _calculationMethod = pt.CalculationMethod.UmmAlQura;
+  final PrayerTimes _pt = PrayerTimes();
+
+  // طريقة الحساب الافتراضية (أم القرى)
+  CalculationMethod _method = CalculationMethod.makkah;
 
   @override
   void initState() {
@@ -56,7 +59,23 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             'خط عرض ${position.latitude.toStringAsFixed(3)} ، خط طول ${position.longitude.toStringAsFixed(3)}';
       });
 
-      _calculatePrayerTimes(position.latitude, position.longitude);
+      // حساب إزاحة المنطقة الزمنية (تقريبية)
+      final int timezoneOffset =
+          (position.longitude / 15).round(); // كل 15 درجة = ساعة
+
+      // استدعاء المكتبة المثبتة مسبقًا
+      _pt.setMethod(_method);
+      final Map<PrayerTime, String> times = _pt.getTimes(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        timezone: timezoneOffset,
+        format: TimeFormat.twentyFourHour,
+      );
+
+      setState(() {
+        _prayerTimes = times;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -65,49 +84,35 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  void _calculatePrayerTimes(double lat, double lon) {
-    try {
-      final coordinates = pt.Coordinates(lat, lon);
-      final today = DateTime.now();
-      final times = pt.PrayerTimes(
-        coordinates: coordinates,
-        date: today,
-        calculationMethod: _calculationMethod,
-      );
-
+  void _changeMethod(CalculationMethod? method) {
+    if (method != null && method != _method) {
       setState(() {
-        _prayerTimes = {
-          'الفجر': _formatTime(times.fajr),
-          'الشروق': _formatTime(times.sunrise),
-          'الظهر': _formatTime(times.dhuhr),
-          'العصر': _formatTime(times.asr),
-          'المغرب': _formatTime(times.maghrib),
-          'العشاء': _formatTime(times.isha),
-        };
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'خطأ في حساب المواقيت: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  String _formatTime(DateTime? dt) {
-    if (dt == null) return '--:--';
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
-  void _changeCalculationMethod(pt.CalculationMethod? method) {
-    if (method != null) {
-      setState(() {
-        _calculationMethod = method;
+        _method = method;
         _isLoading = true;
       });
       _determinePosition();
+    }
+  }
+
+  // الحصول على اسم الصلاة بالعربية
+  String _getPrayerName(PrayerTime pt) {
+    switch (pt) {
+      case PrayerTime.fajr:
+        return 'الفجر';
+      case PrayerTime.sunrise:
+        return 'الشروق';
+      case PrayerTime.dhuhr:
+        return 'الظهر';
+      case PrayerTime.asr:
+        return 'العصر';
+      case PrayerTime.maghrib:
+        return 'المغرب';
+      case PrayerTime.isha:
+        return 'العشاء';
+      case PrayerTime.midnight:
+        return 'منتصف الليل';
+      default:
+        return pt.displayName;
     }
   }
 
@@ -125,25 +130,25 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             onPressed: _determinePosition,
             tooltip: 'تحديث الموقع والمواقيت',
           ),
-          PopupMenuButton<pt.CalculationMethod>(
+          PopupMenuButton<CalculationMethod>(
             icon: const Icon(Icons.tune),
             tooltip: 'طريقة الحساب',
-            onSelected: _changeCalculationMethod,
+            onSelected: _changeMethod,
             itemBuilder: (_) => const [
               PopupMenuItem(
-                value: pt.CalculationMethod.UmmAlQura,
+                value: CalculationMethod.makkah,
                 child: Text('أم القرى'),
               ),
               PopupMenuItem(
-                value: pt.CalculationMethod.MuslimWorldLeague,
+                value: CalculationMethod.mwl,
                 child: Text('رابطة العالم الإسلامي'),
               ),
               PopupMenuItem(
-                value: pt.CalculationMethod.Egyptian,
+                value: CalculationMethod.egypt,
                 child: Text('الهيئة المصرية'),
               ),
               PopupMenuItem(
-                value: pt.CalculationMethod.Karachi,
+                value: CalculationMethod.karachi,
                 child: Text('كراتشي'),
               ),
             ],
@@ -217,8 +222,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                       ),
                       const SizedBox(height: 24),
                       ..._prayerTimes.entries.map((entry) {
-                        String name = entry.key;
-                        String time = entry.value;
+                        final prayerName = _getPrayerName(entry.key);
+                        final time = entry.value;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.symmetric(
@@ -245,7 +250,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                                   Icon(Icons.access_time_rounded,
                                       color: colorScheme.secondary),
                                   const SizedBox(width: 12),
-                                  Text(name,
+                                  Text(prayerName,
                                       style: GoogleFonts.ibmPlexSansArabic(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold)),
