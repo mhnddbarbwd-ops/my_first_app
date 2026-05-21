@@ -16,8 +16,10 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   String _currentLocationName = 'جاري تحديد الموقع...';
   Map<String, String> _prayerTimes = {};
 
-  // طريقة الحساب الافتراضية (أم القرى – مناسبة لمعظم الدول العربية)
-  CalculationMethod _calculationMethod = CalculationMethod.ummalqura;
+  // طريقة الحساب الافتراضية (أم القرى)
+  CalculationMethod _calculationMethod = CalculationMethod.UmmAlQura;
+
+  final PrayerTimeCalculator _calculator = PrayerTimeCalculator();
 
   @override
   void initState() {
@@ -33,7 +35,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
     try {
       // التحقق من خدمة الموقع والصلاحيات
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw 'الرجاء تفعيل خدمات الموقع (GPS) في إعدادات الهاتف.';
       }
@@ -50,7 +52,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       }
 
       // جلب الموقع الحالي بدقة عالية
-      Position position = await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
@@ -59,8 +61,25 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             'خط عرض ${position.latitude.toStringAsFixed(3)} ، خط طول ${position.longitude.toStringAsFixed(3)}';
       });
 
-      // حساب مواقيت الصلاة بناءً على الإحداثيات
-      _calculatePrayerTimes(position);
+      // حساب مواقيت الصلاة (إدخال خط الطول والعرض مباشرة)
+      final times = _calculator.calculatePrayerTimes(
+        DateTime.now(),
+        position.latitude,
+        position.longitude,
+        _calculationMethod,
+      );
+
+      setState(() {
+        _prayerTimes = {
+          'الفجر': times.fajr ?? '--:--',
+          'الشروق': times.sunrise ?? '--:--',
+          'الظهر': times.dhuhr ?? '--:--',
+          'العصر': times.asr ?? '--:--',
+          'المغرب': times.maghrib ?? '--:--',
+          'العشاء': times.isha ?? '--:--',
+        };
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -69,49 +88,13 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  void _calculatePrayerTimes(Position position) {
-    try {
-      final coordinates = Coordinates(position.latitude, position.longitude);
-      final today = DateTime.now();
-
-      // استخدام طريقة الحساب المختارة
-      final times = PrayerTime.getPrayerTimes(
-        today,
-        coordinates,
-        _calculationMethod,
-      );
-
-      if (times != null) {
-        setState(() {
-          _prayerTimes = {
-            'الفجر': times.fajr ?? '--:--',
-            'الشروق': times.sunrise ?? '--:--',
-            'الظهر': times.dhuhr ?? '--:--',
-            'العصر': times.asr ?? '--:--',
-            'المغرب': times.maghrib ?? '--:--',
-            'العشاء': times.isha ?? '--:--',
-          };
-          _isLoading = false;
-        });
-      } else {
-        throw 'فشل حساب المواقيت. حاول مجددًا.';
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'خطأ في حساب المواقيت: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  // تغيير طريقة الحساب (اختياري)
   void _changeCalculationMethod(CalculationMethod? method) {
     if (method != null) {
       setState(() {
         _calculationMethod = method;
         _isLoading = true;
       });
-      _determinePosition(); // إعادة الحساب بنفس الموقع مع الطريقة الجديدة
+      _determinePosition();
     }
   }
 
@@ -133,21 +116,21 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             icon: const Icon(Icons.tune),
             tooltip: 'طريقة الحساب',
             onSelected: _changeCalculationMethod,
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: CalculationMethod.ummalqura,
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: CalculationMethod.UmmAlQura,
                 child: Text('أم القرى'),
               ),
-              const PopupMenuItem(
-                value: CalculationMethod.muslim_world_league,
+              PopupMenuItem(
+                value: CalculationMethod.MuslimWorldLeague,
                 child: Text('رابطة العالم الإسلامي'),
               ),
-              const PopupMenuItem(
-                value: CalculationMethod.egyptian,
+              PopupMenuItem(
+                value: CalculationMethod.Egyptian,
                 child: Text('الهيئة المصرية'),
               ),
-              const PopupMenuItem(
-                value: CalculationMethod.karachi,
+              PopupMenuItem(
+                value: CalculationMethod.Karachi,
                 child: Text('كراتشي'),
               ),
             ],
@@ -200,7 +183,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      // بطاقة الموقع
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -221,7 +203,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // قائمة المواقيت
                       ..._prayerTimes.entries.map((entry) {
                         String name = entry.key;
                         String time = entry.value;
