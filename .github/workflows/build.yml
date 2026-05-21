@@ -1,4 +1,4 @@
-name: Build & Distribute Android APK
+name: Build & Upload APK
 on: [push]
 jobs:
   build:
@@ -16,7 +16,11 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/nafahat-release.keystore
       - run: flutter build apk --debug
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: build/app/outputs/flutter-apk/app-debug.apk
+      - name: Upload APK and get direct link
+        run: |
+          echo "Uploading APK to 0x0.st..."
+          URL=$(curl -s -F "file=@build/app/outputs/flutter-apk/app-debug.apk" https://0x0.st)
+          echo "Download link: $URL"
+          echo "LINK=$URL" >> $GITHUB_ENV
+      - name: Show link in summary
+        run: echo "### 📱 Download APK :rocket: [Click here](${{ env.LINK }})" >> $GITHUB_STEP_SUMMARY
