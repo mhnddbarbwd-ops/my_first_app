@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_prayer_time_calculator/flutter_prayer_time_calculator.dart';
+import 'package:prayer_times/prayer_times.dart' as pt;
 
 class PrayerTimesScreen extends StatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -16,10 +16,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   String _currentLocationName = 'جاري تحديد الموقع...';
   Map<String, String> _prayerTimes = {};
 
-  // طريقة الحساب الافتراضية (أم القرى)
-  CalculationMethod _calculationMethod = CalculationMethod.UmmAlQura;
-
-  final PrayerTimeCalculator _calculator = PrayerTimeCalculator();
+  pt.CalculationMethod _calculationMethod = pt.CalculationMethod.UmmAlQura;
 
   @override
   void initState() {
@@ -34,7 +31,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     });
 
     try {
-      // التحقق من خدمة الموقع والصلاحيات
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw 'الرجاء تفعيل خدمات الموقع (GPS) في إعدادات الهاتف.';
@@ -51,7 +47,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         throw 'صلاحيات الموقع مرفوضة بشكل دائم. يرجى تفعيلها من إعدادات النظام.';
       }
 
-      // جلب الموقع الحالي بدقة عالية
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -61,25 +56,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             'خط عرض ${position.latitude.toStringAsFixed(3)} ، خط طول ${position.longitude.toStringAsFixed(3)}';
       });
 
-      // حساب مواقيت الصلاة (إدخال خط الطول والعرض مباشرة)
-      final times = _calculator.calculatePrayerTimes(
-        DateTime.now(),
-        position.latitude,
-        position.longitude,
-        _calculationMethod,
-      );
-
-      setState(() {
-        _prayerTimes = {
-          'الفجر': times.fajr ?? '--:--',
-          'الشروق': times.sunrise ?? '--:--',
-          'الظهر': times.dhuhr ?? '--:--',
-          'العصر': times.asr ?? '--:--',
-          'المغرب': times.maghrib ?? '--:--',
-          'العشاء': times.isha ?? '--:--',
-        };
-        _isLoading = false;
-      });
+      _calculatePrayerTimes(position.latitude, position.longitude);
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -88,7 +65,43 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  void _changeCalculationMethod(CalculationMethod? method) {
+  void _calculatePrayerTimes(double lat, double lon) {
+    try {
+      final coordinates = pt.Coordinates(lat, lon);
+      final today = DateTime.now();
+      final times = pt.PrayerTimes(
+        coordinates: coordinates,
+        date: today,
+        calculationMethod: _calculationMethod,
+      );
+
+      setState(() {
+        _prayerTimes = {
+          'الفجر': _formatTime(times.fajr),
+          'الشروق': _formatTime(times.sunrise),
+          'الظهر': _formatTime(times.dhuhr),
+          'العصر': _formatTime(times.asr),
+          'المغرب': _formatTime(times.maghrib),
+          'العشاء': _formatTime(times.isha),
+        };
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'خطأ في حساب المواقيت: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatTime(DateTime? dt) {
+    if (dt == null) return '--:--';
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  void _changeCalculationMethod(pt.CalculationMethod? method) {
     if (method != null) {
       setState(() {
         _calculationMethod = method;
@@ -112,25 +125,25 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             onPressed: _determinePosition,
             tooltip: 'تحديث الموقع والمواقيت',
           ),
-          PopupMenuButton<CalculationMethod>(
+          PopupMenuButton<pt.CalculationMethod>(
             icon: const Icon(Icons.tune),
             tooltip: 'طريقة الحساب',
             onSelected: _changeCalculationMethod,
             itemBuilder: (_) => const [
               PopupMenuItem(
-                value: CalculationMethod.UmmAlQura,
+                value: pt.CalculationMethod.UmmAlQura,
                 child: Text('أم القرى'),
               ),
               PopupMenuItem(
-                value: CalculationMethod.MuslimWorldLeague,
+                value: pt.CalculationMethod.MuslimWorldLeague,
                 child: Text('رابطة العالم الإسلامي'),
               ),
               PopupMenuItem(
-                value: CalculationMethod.Egyptian,
+                value: pt.CalculationMethod.Egyptian,
                 child: Text('الهيئة المصرية'),
               ),
               PopupMenuItem(
-                value: CalculationMethod.Karachi,
+                value: pt.CalculationMethod.Karachi,
                 child: Text('كراتشي'),
               ),
             ],
