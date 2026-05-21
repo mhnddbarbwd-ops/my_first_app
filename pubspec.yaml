@@ -14,7 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.7.0
   google_fonts: ^6.1.0
-  intl: ^0.20.2
+  intl: ^0.19.0
   audioplayers: ^6.0.0
   qcf_quran: ^0.0.5
   hijri_date: ^1.1.0
