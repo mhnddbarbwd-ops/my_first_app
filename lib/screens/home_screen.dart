@@ -45,10 +45,21 @@ class _HomeScreenState extends State<HomeScreen> {
       'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
       'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
     ];
-    setState(() {
-      _currentTime = timeFormat.format(makkahTime);
-      _hijriDate = '${today.hDay} ${months[today.hMonth - 1]} ${today.hYear} هـ';
-    });
+    if (mounted) {
+      setState(() {
+        _currentTime = timeFormat.format(makkahTime);
+        _hijriDate = '${today.hDay} ${months[today.hMonth - 1]} ${today.hYear} هـ';
+      });
+    }
+  }
+
+  // دالة ذكية لإظهار ترحيب ديناميكي يتغير بحسب الوقت الحالي
+  String _getDynamicGreeting() {
+    final hour = DateTime.now().toUtc().add(const Duration(hours: 3)).hour;
+    if (hour >= 5 && hour < 12) return 'صباحٌ مبارك بذكر الله';
+    if (hour >= 12 && hour < 16) return 'طاب يومكم بالطاعات';
+    if (hour >= 16 && hour < 20) return 'مساءٌ عامرٌ بالخيرات';
+    return 'ليلةٌ هانئة في حفظ الرحمن';
   }
 
   @override
@@ -63,16 +74,14 @@ class _HomeScreenState extends State<HomeScreen> {
           'نَـفَـحَـات',
           style: GoogleFonts.ibmPlexSansArabic(
             fontWeight: FontWeight.w900,
-            fontSize: 28,
-            letterSpacing: 1.2,
-            color: isDark ? colorScheme.primary : colorScheme.onPrimary,
+            fontSize: 26,
+            letterSpacing: 1.5,
+            color: isDark ? colorScheme.primary : colorScheme.primary,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(
-          color: isDark ? colorScheme.primary : colorScheme.onPrimary,
-        ),
+        centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -80,98 +89,127 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [colorScheme.surface, colorScheme.background]
-                : [colorScheme.primary.withOpacity(0.1), colorScheme.surface],
+                ? [colorScheme.surface, themeMode == ThemeMode.dark ? const Color(0xFF0F1410) : colorScheme.surface]
+                : [colorScheme.primary.withOpacity(0.06), colorScheme.surface],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'مظهر التطبيق الديناميكي',
-                    style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.secondary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // الترحيب الديناميكي العلوي
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getDynamicGreeting(),
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? colorScheme.primary : colorScheme.primary,
+                          ),
+                        ),
+                        Text(
+                          'مظهر التطبيق الذكي',
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
                     ),
+                    Icon(Icons.spa_rounded, color: colorScheme.secondary, size: 28),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // شريط تحويل الثيمات المحسن
+                _buildThemeSwitcherControl(context, colorScheme, isDark),
+                const SizedBox(height: 24),
+                
+                // بطاقة الوقت والتاريخ الفاخرة الجديدة
+                _buildModernDateTimeCard(colorScheme, isDark),
+                const SizedBox(height: 28),
+                
+                // عنوان الخدمات
+                Text(
+                  'الواجهة الإسلامية الفاخرة',
+                  style: GoogleFonts.ibmPlexSansArabic(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : colorScheme.primary,
                   ),
-                  const SizedBox(height: 12),
-                  _buildThemeSwitcherControl(context, colorScheme, isDark),
-                  const SizedBox(height: 28),
-                  _buildModernDateTimeCard(colorScheme, isDark),
-                  const SizedBox(height: 32),
-                  Text(
-                    'الخدمات الإسلامية الفاخرة',
-                    style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? colorScheme.primary : colorScheme.onSurface,
+                ),
+                const SizedBox(height: 16),
+
+                // بطاقة "القرآن الكريم" المميزة والأساسية (تأخذ العرض الكامل بشكل ملكي)
+                _buildFeaturedMenuCard(
+                  context: context,
+                  icon: Icons.menu_book_rounded,
+                  label: 'القرآن الكريم',
+                  subtitle: 'تصفح سور وآيات الذكر الحكيم بفهرس وبحث ذكي متطور',
+                  colorScheme: colorScheme,
+                  isDark: isDark,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
+                ),
+                const SizedBox(height: 16),
+
+                // شبكة باقي الخدمات المتناسقة تماماً (2×2)
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.0,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  children: [
+                    _buildGridMenuCard(
+                      icon: Icons.access_time_filled_rounded,
+                      label: 'مواقيت الصلاة',
+                      subtitle: 'تحديد حي للموقع والتوقيت الدقيق',
+                      baseColor: colorScheme.secondary,
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.92,
-                    crossAxisSpacing: 18,
-                    mainAxisSpacing: 18,
-                    children: [
-                      _buildMenuCard(
-                        icon: Icons.menu_book_rounded,
-                        label: 'القرآن الكريم',
-                        subtitle: 'تصفح، فهرس وبحث ذكي',
-                        colors: isDark
-                            ? [colorScheme.primary.withOpacity(0.8), colorScheme.primary]
-                            : [const Color(0xFF0B3C18), const Color(0xFF1B5E20)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
-                      ),
-                      _buildMenuCard(
-                        icon: Icons.location_on_rounded,
-                        label: 'مواقيت الصلاة',
-                        subtitle: 'تحديد الموقع الحي والتوقيت',
-                        colors: isDark
-                            ? [colorScheme.secondary.withOpacity(0.8), colorScheme.secondary]
-                            : [const Color(0xFFC5A880), const Color(0xFF9E7E50)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
-                      ),
-                      _buildMenuCard(
-                        icon: Icons.auto_stories_rounded,
-                        label: 'الأحاديث النبوية',
-                        subtitle: 'الأربعين النووية بالشرح كاملة',
-                        colors: isDark
-                            ? [const Color(0xFF114B43), const Color(0xFF004D40)]
-                            : [const Color(0xFF114B43), const Color(0xFF004D40)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
-                      ),
-                      _buildMenuCard(
-                        icon: Icons.fingerprint_rounded,
-                        label: 'المسبحة الذكية',
-                        subtitle: 'عداد الأذكار المطور المرن',
-                        colors: isDark
-                            ? [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)]
-                            : [const Color(0xFF2E5B3E), const Color(0xFF1E3D29)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
-                      ),
-                      _buildMenuCard(
-                        icon: Icons.emoji_events_rounded,
-                        label: 'هِمَمْ',
-                        subtitle: 'تحديات، اختبارات، أوسمة',
-                        colors: isDark
-                            ? [const Color(0xFF5C3D6E), const Color(0xFF3C1F4A)]
-                            : [const Color(0xFF6A1B9A), const Color(0xFF4A148C)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamScreen())),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+                    _buildGridMenuCard(
+                      icon: Icons.auto_stories_rounded,
+                      label: 'الأحاديث النبوية',
+                      subtitle: 'الأربعين النووية بالشرح والبيان',
+                      baseColor: const Color(0xFF114B43),
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
+                    ),
+                    _buildGridMenuCard(
+                      icon: Icons.fingerprint_rounded,
+                      label: 'المسبحة الذكية',
+                      subtitle: 'عداد الأذكار المطور المرن والمعاصر',
+                      baseColor: const Color(0xFF2E5B3E),
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
+                    ),
+                    _buildGridMenuCard(
+                      icon: Icons.emoji_events_rounded,
+                      label: 'هِمَمْ المتكاملة',
+                      subtitle: 'تحديات، اختبارات وأوسمة تشجيعية',
+                      baseColor: isDark ? const Color(0xFF5C3D6E) : const Color(0xFF6A1B9A),
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamScreen())),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),
@@ -185,18 +223,18 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, currentMode, child) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? colorScheme.surface.withOpacity(0.5) : colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
+            color: isDark ? colorScheme.surface : Colors.white,
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                blurRadius: 16,
+                color: Colors.black.withOpacity(isDark ? 0.15 : 0.03),
+                blurRadius: 12,
                 offset: const Offset(0, 4),
               )
             ],
-            border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.05)),
           ),
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(5),
           child: Row(
             children: [
               _buildThemeItem(ThemeMode.light, Icons.wb_sunny_rounded, 'فاتح', currentMode, colorScheme),
@@ -215,27 +253,27 @@ class _HomeScreenState extends State<HomeScreen> {
       child: GestureDetector(
         onTap: () => appThemeNotifier.value = mode,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.fastOutSlowIn,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(15),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
-                size: 18,
+                color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.5),
+                size: 16,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: GoogleFonts.ibmPlexSansArabic(
                   fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
@@ -250,111 +288,127 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
           colors: isDark
-              ? [colorScheme.surface, colorScheme.surface.withOpacity(0.8)]
-              : [colorScheme.primary, colorScheme.primary.withOpacity(0.88)],
+              ? [colorScheme.surface, colorScheme.primary.withOpacity(0.15)]
+              : [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(isDark ? 0.4 : 0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
+        border: Border.all(color: colorScheme.primary.withOpacity(isDark ? 0.1 : 0.0)),
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: -30,
-            top: -30,
-            child: Icon(
-              Icons.mosque_rounded,
-              size: 180,
-              color: (isDark ? colorScheme.primary : Colors.white).withOpacity(0.04),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            Positioned(
+              left: -20,
+              top: -20,
+              child: Icon(
+                Icons.mosque_rounded,
+                size: 160,
+                color: (isDark ? colorScheme.primary : Colors.white).withOpacity(0.05),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(30),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.stars_rounded, size: 18, color: colorScheme.secondary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'توقيت مكة المكرمة الأوتوماتيكي',
+                            style: GoogleFonts.ibmPlexSansArabic(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? colorScheme.onSurface.withOpacity(0.7) : Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Icon(Icons.schedule_rounded, color: colorScheme.secondary, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _currentTime,
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? colorScheme.primary : Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black38 : Colors.black26,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_on_rounded, size: 18, color: colorScheme.secondary),
-                        const SizedBox(width: 6),
+                        Icon(Icons.calendar_today_rounded, size: 14, color: colorScheme.secondary),
+                        const SizedBox(width: 8),
                         Text(
-                          'توقيت مكة المكرمة الأوتوماتيكي',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.white70,
+                          _hijriDate,
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.white,
                           ),
                         ),
                       ],
                     ),
-                    Icon(Icons.av_timer_rounded, color: colorScheme.secondary),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  _currentTime,
-                  style: GoogleFonts.ibmPlexSansArabic(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? colorScheme.primary : Colors.white,
                   ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.black26 : Colors.black38,
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.calendar_month_rounded, size: 18, color: colorScheme.secondary),
-                      const SizedBox(width: 10),
-                      Text(
-                        _hijriDate,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? colorScheme.onSurface : Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMenuCard({
+  // كرت عريض مميز خاص بالقرآن الكريم
+  Widget _buildFeaturedMenuCard({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required String subtitle,
-    required List<Color> colors,
+    required ColorScheme colorScheme,
+    required bool isDark,
     required VoidCallback onTap,
   }) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: isDark 
+              ? [colorScheme.primary.withOpacity(0.2), colorScheme.primary.withOpacity(0.3)]
+              : [const Color(0xFF0B3C18), const Color(0xFF165225)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: colors[0].withOpacity(0.3),
+            color: const Color(0xFF0B3C18).withOpacity(isDark ? 0.1 : 0.2),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -364,36 +418,123 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(icon, color: isDark ? colorScheme.primary : Colors.white, size: 36),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.75),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_left_rounded, color: Colors.white.withOpacity(0.6), size: 28)
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // كروت الشبكة لباقي الخدمات الإسلامية
+  Widget _buildGridMenuCard({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required Color baseColor,
+    required ColorScheme colorScheme,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final finalGradient = isDark 
+        ? [colorScheme.surface, baseColor.withOpacity(0.15)]
+        : [baseColor, baseColor.withOpacity(0.85)];
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: finalGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: baseColor.withOpacity(isDark ? 0.05 : 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: isDark ? colorScheme.primary.withOpacity(0.08) : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(18),
+                    color: isDark ? baseColor.withOpacity(0.15) : Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 28),
+                  child: Icon(icon, color: isDark ? baseColor : Colors.white, size: 24),
                 ),
                 const Spacer(),
                 Text(
                   label,
                   style: GoogleFonts.ibmPlexSansArabic(
-                    fontSize: 17,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.ibmPlexSansArabic(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.75),
+                    color: isDark ? colorScheme.onSurface.withOpacity(0.5) : Colors.white.withOpacity(0.8),
                     height: 1.3,
                   ),
                 ),
