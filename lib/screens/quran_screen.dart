@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';  // 🆕
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
+import 'package:nafahat/screens/tajweed_screen.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 
 class QuranScreen extends StatefulWidget {
