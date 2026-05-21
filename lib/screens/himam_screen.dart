@@ -4,6 +4,7 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/models/challenge_model.dart';
+import 'package:nafahat/models/user_progress.dart';
 import 'package:nafahat/screens/quiz_screen.dart';
 
 class HimamScreen extends StatelessWidget {
