@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_prayer_time_calculator/flutter_prayer_time_calculator.dart';
+import 'package:adhan_dart/adhan_dart.dart';
 
 class PrayerTimesScreen extends StatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -13,27 +13,29 @@ class PrayerTimesScreen extends StatefulWidget {
 class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
-  String _currentLocationName = 'جاري تحديد الموقع...';
-  Map<PrayerTime, String> _prayerTimes = {};
-
-  final PrayerTimes _pt = PrayerTimes();
+  String _locationLabel = 'جاري تحديد الموقع...';
+  Map<String, String> _prayerTimes = {};
 
   // طريقة الحساب الافتراضية (أم القرى)
-  CalculationMethod _method = CalculationMethod.makkah;
+  CalculationMethod _calcMethod = CalculationMethod.umm_al_qura;
+
+  // وقت التعديل (مكة المكرمة)
+  Madhab _madhhab = Madhab.shafi;
 
   @override
   void initState() {
     super.initState();
-    _determinePosition();
+    _fetchLocationAndTimes();
   }
 
-  Future<void> _determinePosition() async {
+  Future<void> _fetchLocationAndTimes() async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
+      // 1. التحقق من خدمة الموقع وصلاحياته
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw 'الرجاء تفعيل خدمات الموقع (GPS) في إعدادات الهاتف.';
@@ -50,32 +52,18 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         throw 'صلاحيات الموقع مرفوضة بشكل دائم. يرجى تفعيلها من إعدادات النظام.';
       }
 
+      // 2. جلب الإحداثيات الحقيقية
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      // 3. تحديث وصف الموقع
       setState(() {
-        _currentLocationName =
-            'خط عرض ${position.latitude.toStringAsFixed(3)} ، خط طول ${position.longitude.toStringAsFixed(3)}';
+        _locationLabel = 'دولة/منطقة: حسب إحداثيات GPS';
       });
 
-      // حساب إزاحة المنطقة الزمنية (تقريبية)
-      final int timezoneOffset =
-          (position.longitude / 15).round(); // كل 15 درجة = ساعة
-
-      // استدعاء المكتبة المثبتة مسبقًا
-      _pt.setMethod(_method);
-      final Map<PrayerTime, String> times = _pt.getTimes(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        timezone: timezoneOffset,
-        format: TimeFormat.twentyFourHour,
-      );
-
-      setState(() {
-        _prayerTimes = times;
-        _isLoading = false;
-      });
+      // 4. حساب المواقيت بالإحداثيات الفعلية
+      _calculateTimes(position.latitude, position.longitude);
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -84,35 +72,56 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  void _changeMethod(CalculationMethod? method) {
-    if (method != null && method != _method) {
+  void _calculateTimes(double lat, double lng) {
+    try {
+      // إعداد الإحداثيات
+      final coordinates = Coordinates(lat, lng);
+
+      // تحضير معاملات الحساب
+      final params = _calcMethod.getParameters();
+      final dateComponents = DateComponents.fromDateTime(DateTime.now());
+
+      // حساب أوقات الصلاة
+      final todayPrayers = PrayerTimes(
+        coordinates: coordinates,
+        date: dateComponents,
+        calculationParameters: params,
+        madhab: _madhhab,
+      );
+
+      // تنسيق النتائج
       setState(() {
-        _method = method;
-        _isLoading = true;
+        _prayerTimes = {
+          'الفجر': _formatTime(todayPrayers.fajr!),
+          'الشروق': _formatTime(todayPrayers.sunrise!),
+          'الظهر': _formatTime(todayPrayers.dhuhr!),
+          'العصر': _formatTime(todayPrayers.asr!),
+          'المغرب': _formatTime(todayPrayers.maghrib!),
+          'العشاء': _formatTime(todayPrayers.isha!),
+        };
+        _isLoading = false;
       });
-      _determinePosition();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'فشل حساب المواقيت: $e';
+        _isLoading = false;
+      });
     }
   }
 
-  // الحصول على اسم الصلاة بالعربية
-  String _getPrayerName(PrayerTime pt) {
-    switch (pt) {
-      case PrayerTime.fajr:
-        return 'الفجر';
-      case PrayerTime.sunrise:
-        return 'الشروق';
-      case PrayerTime.dhuhr:
-        return 'الظهر';
-      case PrayerTime.asr:
-        return 'العصر';
-      case PrayerTime.maghrib:
-        return 'المغرب';
-      case PrayerTime.isha:
-        return 'العشاء';
-      case PrayerTime.midnight:
-        return 'منتصف الليل';
-      default:
-        return pt.displayName;
+  String _formatTime(DateTime dt) {
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  void _changeMethod(CalculationMethod? method) {
+    if (method != null && method != _calcMethod) {
+      setState(() {
+        _calcMethod = method;
+        _isLoading = true;
+      });
+      _fetchLocationAndTimes();
     }
   }
 
@@ -127,29 +136,45 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _determinePosition,
-            tooltip: 'تحديث الموقع والمواقيت',
+            onPressed: _fetchLocationAndTimes,
+            tooltip: 'تحديث المواقيت',
           ),
           PopupMenuButton<CalculationMethod>(
             icon: const Icon(Icons.tune),
-            tooltip: 'طريقة الحساب',
+            tooltip: 'اختيار طريقة الحساب',
             onSelected: _changeMethod,
             itemBuilder: (_) => const [
               PopupMenuItem(
-                value: CalculationMethod.makkah,
-                child: Text('أم القرى'),
+                value: CalculationMethod.umm_al_qura,
+                child: Text('أم القرى (مكة)'),
               ),
               PopupMenuItem(
-                value: CalculationMethod.mwl,
+                value: CalculationMethod.muslim_world_league,
                 child: Text('رابطة العالم الإسلامي'),
               ),
               PopupMenuItem(
-                value: CalculationMethod.egypt,
+                value: CalculationMethod.egyptian,
                 child: Text('الهيئة المصرية'),
               ),
               PopupMenuItem(
                 value: CalculationMethod.karachi,
-                child: Text('كراتشي'),
+                child: Text('جامعة العلوم كراتشي'),
+              ),
+              PopupMenuItem(
+                value: CalculationMethod.dubai,
+                child: Text('دبي'),
+              ),
+              PopupMenuItem(
+                value: CalculationMethod.kuwait,
+                child: Text('الكويت'),
+              ),
+              PopupMenuItem(
+                value: CalculationMethod.qatar,
+                child: Text('قطر'),
+              ),
+              PopupMenuItem(
+                value: CalculationMethod.singapore,
+                child: Text('سنغافورة'),
               ),
             ],
           ),
@@ -184,7 +209,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                                 fontSize: 16, color: colorScheme.error)),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
-                          onPressed: _determinePosition,
+                          onPressed: _fetchLocationAndTimes,
                           icon: const Icon(Icons.my_location),
                           label: Text('إعادة المحاولة',
                               style: GoogleFonts.ibmPlexSansArabic()),
@@ -213,7 +238,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                                 color: colorScheme.primary),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(_currentLocationName,
+                              child: Text(_locationLabel,
                                   style: GoogleFonts.ibmPlexSansArabic(
                                       fontWeight: FontWeight.bold)),
                             ),
@@ -222,8 +247,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                       ),
                       const SizedBox(height: 24),
                       ..._prayerTimes.entries.map((entry) {
-                        final prayerName = _getPrayerName(entry.key);
-                        final time = entry.value;
+                        String name = entry.key;
+                        String time = entry.value;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.symmetric(
@@ -250,7 +275,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                                   Icon(Icons.access_time_rounded,
                                       color: colorScheme.secondary),
                                   const SizedBox(width: 12),
-                                  Text(prayerName,
+                                  Text(name,
                                       style: GoogleFonts.ibmPlexSansArabic(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold)),
