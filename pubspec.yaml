@@ -34,7 +34,7 @@ dependencies:
   circular_countdown_timer: ^0.2.3
   permission_handler: ^11.3.1
   http: ^1.2.2
-  adhan: ^2.0.1 # المكتبة الدقيقة لحساب مواقيت الصلاة
+  adhan: ^2.0.0+1
 
 dev_dependencies:
   flutter_test:
