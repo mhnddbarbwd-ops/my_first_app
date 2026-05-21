@@ -8,7 +8,7 @@ import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
 import 'package:nafahat/screens/prayer_times_screen.dart';
-import 'package:nafahat/screens/himam_hub_screen.dart';
+import 'package:nafahat/screens/himam_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -103,10 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 12),
                   _buildThemeSwitcherControl(context, colorScheme, isDark),
                   const SizedBox(height: 28),
-
                   _buildModernDateTimeCard(colorScheme, isDark),
                   const SizedBox(height: 32),
-
                   Text(
                     'الخدمات الإسلامية الفاخرة',
                     style: GoogleFonts.ibmPlexSansArabic(
@@ -116,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -168,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         colors: isDark
                             ? [const Color(0xFF5C3D6E), const Color(0xFF3C1F4A)]
                             : [const Color(0xFF6A1B9A), const Color(0xFF4A148C)],
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamHubScreen())),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamScreen())),
                       ),
                     ],
                   ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 
@@ -211,7 +213,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       drawer: _buildNavigationDrawer(colorScheme),
       body: PageviewQuran(
         initialPageNumber: _currentPage,
-        onPageChanged: (page) => setState(() => _currentPage = page),
+        onPageChanged: (page) {
+          setState(() => _currentPage = page);
+          Provider.of<UserProgressProvider>(context, listen: false).updateReadPages(page);
+        },
       ),
     );
   }
