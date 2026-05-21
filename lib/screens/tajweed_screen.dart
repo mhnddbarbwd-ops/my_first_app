@@ -66,7 +66,8 @@ class _TajweedScreenState extends State<TajweedScreen> {
           // الجزء العلوي: المصحف (أو RecitationScreen)
           Expanded(
             flex: 3,
-            child: const RecitationScreen(), // يمكن استبدالها بعرض صفحة المصحف الحالية
+            // التعديل هنا: إزالة const وإضافة الـ UniqueKey لتفادي تصادم تهيئة الـ AudioRecordingService المتواجد داخل المكتبة
+            child: RecitationScreen(key: UniqueKey()), 
           ),
           // فاصل
           Divider(color: colorScheme.primary.withOpacity(0.2), height: 1),
