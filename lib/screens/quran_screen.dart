@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';  // 🆕
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:qcf_quran/qcf_quran.dart';
@@ -181,6 +182,66 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     );
   }
 
+  // 🆕 إظهار فقاعة "معلم التجويد"
+  void _showTajweedBubble() {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 20),
+            Container(
+              width: 70, height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [colorScheme.primary, colorScheme.secondary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Icon(Icons.spellcheck, color: Colors.white, size: 36),
+            ),
+            const SizedBox(height: 16),
+            Text('معلم التجويد', style: GoogleFonts.ibmPlexSansArabic(fontSize: 24, fontWeight: FontWeight.w900, color: colorScheme.primary)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'راجع قراءتك مباشرة. اقرأ الآية وسيُصححها الذكاء الاصطناعي فوراً.\nالكلمات الصحيحة تظهر باللون الأخضر، والأخطاء باللون الأحمر.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.ibmPlexSansArabic(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.7), height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const TajweedScreen()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              ),
+              child: Text('ابدأ جلسة التصحيح', style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -196,6 +257,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
+          // 🆕 زر معلم التجويد
+          IconButton(
+            icon: Icon(Icons.spellcheck, color: colorScheme.primary),
+            onPressed: _showTajweedBubble,
+            tooltip: 'معلم التجويد',
+          ),
           IconButton(
             icon: Icon(Icons.flag_rounded, color: colorScheme.primary),
             onPressed: () => Navigator.push(
