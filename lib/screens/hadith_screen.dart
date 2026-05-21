@@ -1,149 +1,290 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// لا تنسَ استدعاء ملف البيانات (تأكد من المسار الصحيح لديك)
-import 'package:nafahat/data/hadith_data.dart'; 
+import 'package:nafahat/services/hadith_service.dart';
 
-class HadithScreen extends StatelessWidget {
+class HadithScreen extends StatefulWidget {
   const HadithScreen({super.key});
+
+  @override
+  State<HadithScreen> createState() => _HadithScreenState();
+}
+
+class _HadithScreenState extends State<HadithScreen> {
+  List<Map<String, dynamic>> _hadiths = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHadiths();
+  }
+
+  Future<void> _loadHadiths() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final results = await HadithService.getRandomHadiths(count: 10);
+      if (results.isNotEmpty) {
+        _hadiths = results;
+      } else {
+        _error = 'لم يتم العثور على أحاديث. حاول مجدداً.';
+      }
+    } catch (e) {
+      _error = 'فشل الاتصال بالإنترنت أو استنفذت حد الـ API اليومي.';
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // جلب البيانات من الكلاس الذي أنشأناه
-    final hadiths = HadithDatabase.nawawiHadiths; 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('الأربعين النووية', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
+        title: Text('الأحاديث النبوية',
+            style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900, color: colorScheme.primary)),
         centerTitle: true,
-      ),
-      body: ListView.builder(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        itemCount: hadiths.length,
-        itemBuilder: (ctx, i) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: _buildHadithCard(context, hadiths[i], colorScheme),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHadithCard(BuildContext context, HadithModel h, ColorScheme colorScheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 6))],
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
-                child: Icon(Icons.menu_book_rounded, color: colorScheme.primary, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      h.title,
-                      style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.primary),
-                    ),
-                    Text('رواه: ${h.narrator}', style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5))),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(height: 1)),
-          Text(
-            h.text,
-            style: GoogleFonts.amiri(fontSize: 20, height: 1.9, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(h.grade, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: colorScheme.secondary)),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => _showHadithDetail(context, h, colorScheme),
-                icon: const Icon(Icons.auto_stories_rounded, size: 18),
-                label: Text('الشرح والبيان', style: GoogleFonts.ibmPlexSansArabic(fontSize: 12, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _isLoading ? null : _loadHadiths,
+            tooltip: 'أحاديث جديدة',
           ),
         ],
       ),
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: colorScheme.primary),
+                  const SizedBox(height: 16),
+                  Text('جاري جلب الأحاديث من الإنترنت...',
+                      style: GoogleFonts.ibmPlexSansArabic(color: colorScheme.primary)),
+                ],
+              ),
+            )
+          : _error != null
+              ? Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cloud_off_rounded, size: 64, color: colorScheme.error),
+                        const SizedBox(height: 16),
+                        Text(_error!, textAlign: TextAlign.center,
+                            style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, color: colorScheme.error)),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _loadHadiths,
+                          icon: const Icon(Icons.refresh),
+                          label: Text('إعادة المحاولة', style: GoogleFonts.ibmPlexSansArabic()),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _hadiths.length,
+                  itemBuilder: (ctx, i) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _buildHadithCard(_hadiths[i], colorScheme, isDark),
+                    );
+                  },
+                ),
     );
   }
 
-  void _showHadithDetail(BuildContext context, HadithModel h, ColorScheme colorScheme) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+  Widget _buildHadithCard(Map<String, dynamic> h, ColorScheme colorScheme, bool isDark) {
+    // استخراج البيانات من JSON الخاص بـ hadithapi.com
+    final hadithNumber = h['hadithNumber']?.toString() ?? '';
+    final text = h['hadithText'] ?? h['text'] ?? 'لا يوجد نص';
+    final book = h['book'] ?? '';
+    final chapter = h['chapter']?.toString() ?? '';
+    final narrator = h['narrator'] ?? '';
+    final grade = h['grade'] ?? 'غير محدد';
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [colorScheme.surface, colorScheme.primary.withOpacity(0.08)]
+              : [Colors.white, colorScheme.primary.withOpacity(0.03)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        border: Border.all(
+          color: isDark
+              ? colorScheme.primary.withOpacity(0.15)
+              : colorScheme.primary.withOpacity(0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(isDark ? 0.1 : 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(22),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
-            Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(10))),
-            const SizedBox(height: 24),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(h.title, style: GoogleFonts.ibmPlexSansArabic(fontSize: 20, fontWeight: FontWeight.w900, color: colorScheme.primary)),
-                    const SizedBox(height: 8),
-                    Text('المصدر: ${h.source}', style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withOpacity(0.5))),
-                    const SizedBox(height: 24),
-                    Text('الفوائد المستنبطة والشرح:', style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, fontWeight: FontWeight.w800, color: colorScheme.secondary)),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface, 
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-                      ),
-                      child: Text(
-                        h.sharh,
-                        style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, height: 1.8, color: colorScheme.onSurface.withOpacity(0.85)),
-                      ),
+            // رأس البطاقة: رقم الحديث + اسم الكتاب
+            Row(
+              children: [
+                // دائرة رقم الحديث
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colorScheme.primary, colorScheme.secondary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(height: 40),
-                  ],
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    hadithNumber.isNotEmpty ? '#$hadithNumber' : '',
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        book,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      if (chapter.isNotEmpty)
+                        Text(
+                          chapter,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                // درجة الحديث
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: grade.contains('صحيح')
+                        ? Colors.green.withOpacity(0.12)
+                        : Colors.orange.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    grade,
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: grade.contains('صحيح') ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // فاصل فاخر
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary.withOpacity(0),
+                      colorScheme.primary.withOpacity(0.2),
+                      colorScheme.primary.withOpacity(0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // نص الحديث
+            Text(
+              text,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.justify,
+              style: GoogleFonts.amiri(
+                fontSize: 20,
+                height: 2.0,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // الراوي
+            if (narrator.isNotEmpty)
+              Row(
+                children: [
+                  Icon(Icons.person_rounded, size: 16, color: colorScheme.secondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'رواه: $narrator',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+
+            const SizedBox(height: 16),
+
+            // زر المشاركة
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  // يمكن إضافة مشاركة لاحقاً
+                },
+                icon: Icon(Icons.share_rounded, size: 18, color: colorScheme.secondary),
+                label: Text('مشاركة', style: GoogleFonts.ibmPlexSansArabic(color: colorScheme.secondary)),
               ),
             ),
           ],
