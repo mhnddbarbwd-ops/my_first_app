@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
 import 'package:nafahat/services/gemini_service.dart';
+import 'package:nafahat/widgets/tajweed_recitation_wrapper.dart'; // 🆕 استيراد الغلاف
 
 class TajweedScreen extends StatefulWidget {
   const TajweedScreen({super.key});
@@ -63,11 +63,10 @@ class _TajweedScreenState extends State<TajweedScreen> {
       ),
       body: Column(
         children: [
-          // الجزء العلوي: المصحف (RecitationScreen)
-          Expanded(
+          // الجزء العلوي: المصحف (باستخدام الغلاف الآمن)
+          const Expanded(
             flex: 3,
-            // استخدام const وإزالة UniqueKey لمنع إعادة التهيئة الداخلية
-            child: const RecitationScreen(),
+            child: TajweedRecitationWrapper(), // 🆕 استبدال RecitationScreen بالغلاف
           ),
           // فاصل
           Divider(color: colorScheme.primary.withOpacity(0.2), height: 1),
