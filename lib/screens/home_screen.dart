@@ -53,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // دالة ذكية لإظهار ترحيب ديناميكي يتغير بحسب الوقت الحالي
   String _getDynamicGreeting() {
     final hour = DateTime.now().toUtc().add(const Duration(hours: 3)).hour;
     if (hour >= 5 && hour < 12) return 'صباحٌ مبارك بذكر الله';
@@ -89,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [colorScheme.surface, themeMode == ThemeMode.dark ? const Color(0xFF0F1410) : colorScheme.surface]
+                ? [colorScheme.surface, isDark ? const Color(0xFF0F1410) : colorScheme.surface]
                 : [colorScheme.primary.withOpacity(0.06), colorScheme.surface],
           ),
         ),
@@ -100,7 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // الترحيب الديناميكي العلوي
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -129,16 +127,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                
-                // شريط تحويل الثيمات المحسن
                 _buildThemeSwitcherControl(context, colorScheme, isDark),
                 const SizedBox(height: 24),
-                
-                // بطاقة الوقت والتاريخ الفاخرة الجديدة
                 _buildModernDateTimeCard(colorScheme, isDark),
                 const SizedBox(height: 28),
-                
-                // عنوان الخدمات
                 Text(
                   'الواجهة الإسلامية الفاخرة',
                   style: GoogleFonts.ibmPlexSansArabic(
@@ -148,8 +140,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // بطاقة "القرآن الكريم" المميزة والأساسية (تأخذ العرض الكامل بشكل ملكي)
                 _buildFeaturedMenuCard(
                   context: context,
                   icon: Icons.menu_book_rounded,
@@ -160,8 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
                 ),
                 const SizedBox(height: 16),
-
-                // شبكة باقي الخدمات المتناسقة تماماً (2×2)
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -385,7 +373,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // كرت عريض مميز خاص بالقرآن الكريم
   Widget _buildFeaturedMenuCard({
     required BuildContext context,
     required IconData icon,
@@ -465,7 +452,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // كروت الشبكة لباقي الخدمات الإسلامية
   Widget _buildGridMenuCard({
     required IconData icon,
     required String label,
