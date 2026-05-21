@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:adhan_dart/adhan_dart.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:aladhan_prayer_times/aladhan_prayer_times.dart';
 
 class PrayerTimesScreen extends StatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -16,11 +17,11 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   String _locationLabel = 'جاري تحديد الموقع...';
   Map<String, String> _prayerTimes = {};
 
-  // طريقة الحساب الافتراضية (أم القرى)
-  CalculationMethod _calcMethod = CalculationMethod.umm_al_qura;
+  String _currentCountry = 'Saudi Arabia';
+  String _currentCity = 'Makkah';
 
-  // وقت التعديل (مكة المكرمة)
-  Madhab _madhhab = Madhab.shafi;
+  final TextEditingController _countryController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
 
   @override
   void initState() {
@@ -35,94 +36,129 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     });
 
     try {
-      // 1. التحقق من خدمة الموقع وصلاحياته
+      // محاولة الحصول على الدولة والمدينة من GPS
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw 'الرجاء تفعيل خدمات الموقع (GPS) في إعدادات الهاتف.';
+        throw 'خدمة GPS غير مفعلة. سيتم استخدام الإعداد اليدوي.';
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw 'تم رفض صلاحية الوصول للموقع. لا يمكن حساب المواقيت تلقائيًا.';
+          throw 'صلاحية الموقع مرفوضة. الرجاء إدخال الدولة والمدينة يدويًا.';
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        throw 'صلاحيات الموقع مرفوضة بشكل دائم. يرجى تفعيلها من إعدادات النظام.';
+        throw 'صلاحية الموقع مرفوضة دائمًا. استخدم الإدخال اليدوي.';
       }
 
-      // 2. جلب الإحداثيات الحقيقية
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // 3. تحديث وصف الموقع
-      setState(() {
-        _locationLabel = 'دولة/منطقة: حسب إحداثيات GPS';
-      });
-
-      // 4. حساب المواقيت بالإحداثيات الفعلية
-      _calculateTimes(position.latitude, position.longitude);
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _calculateTimes(double lat, double lng) {
-    try {
-      // إعداد الإحداثيات
-      final coordinates = Coordinates(lat, lng);
-
-      // تحضير معاملات الحساب
-      final params = _calcMethod.getParameters();
-      final dateComponents = DateComponents.fromDateTime(DateTime.now());
-
-      // حساب أوقات الصلاة
-      final todayPrayers = PrayerTimes(
-        coordinates: coordinates,
-        date: dateComponents,
-        calculationParameters: params,
-        madhab: _madhhab,
+      // تحويل الإحداثيات إلى عنوان (دولة ومدينة)
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
       );
 
-      // تنسيق النتائج
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        _currentCountry = place.country ?? 'Saudi Arabia';
+        _currentCity = place.locality ?? place.subAdministrativeArea ?? 'Makkah';
+      }
+    } catch (e) {
+      // في حال فشل GPS، نعتمد على القيم اليدوية
+      _errorMessage = '';
+    }
+
+    setState(() {
+      _locationLabel = 'الدولة: $_currentCountry\nالمدينة: $_currentCity';
+    });
+
+    // جلب المواقيت من API الأذان
+    await _fetchPrayerTimes();
+  }
+
+  Future<void> _fetchPrayerTimes() async {
+    try {
+      final times = await AladhanPrayerTimes.getPrayerTimes(
+        country: _currentCountry,
+        city: _currentCity,
+      );
+
       setState(() {
         _prayerTimes = {
-          'الفجر': _formatTime(todayPrayers.fajr!),
-          'الشروق': _formatTime(todayPrayers.sunrise!),
-          'الظهر': _formatTime(todayPrayers.dhuhr!),
-          'العصر': _formatTime(todayPrayers.asr!),
-          'المغرب': _formatTime(todayPrayers.maghrib!),
-          'العشاء': _formatTime(todayPrayers.isha!),
+          'الفجر': times.fajr ?? '--:--',
+          'الشروق': times.sunrise ?? '--:--',
+          'الظهر': times.dhuhr ?? '--:--',
+          'العصر': times.asr ?? '--:--',
+          'المغرب': times.maghrib ?? '--:--',
+          'العشاء': times.isha ?? '--:--',
         };
         _isLoading = false;
+        _errorMessage = '';
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'فشل حساب المواقيت: $e';
+        _errorMessage = 'فشل جلب المواقيت: $e';
         _isLoading = false;
       });
     }
   }
 
-  String _formatTime(DateTime dt) {
-    final hour = dt.hour.toString().padLeft(2, '0');
-    final minute = dt.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+  Future<void> _manualUpdate() async {
+    _countryController.text = _currentCountry;
+    _cityController.text = _currentCity;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('تحديد الدولة والمدينة',
+            style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _countryController,
+              decoration: const InputDecoration(labelText: 'الدولة (بالإنجليزية)'),
+            ),
+            TextField(
+              controller: _cityController,
+              decoration: const InputDecoration(labelText: 'المدينة (بالإنجليزية)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('تحديث'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() {
+        _currentCountry = _countryController.text.trim();
+        _currentCity = _cityController.text.trim();
+        _isLoading = true;
+        _locationLabel = 'الدولة: $_currentCountry\nالمدينة: $_currentCity';
+      });
+      await _fetchPrayerTimes();
+    }
   }
 
-  void _changeMethod(CalculationMethod? method) {
-    if (method != null && method != _calcMethod) {
-      setState(() {
-        _calcMethod = method;
-        _isLoading = true;
-      });
-      _fetchLocationAndTimes();
-    }
+  @override
+  void dispose() {
+    _countryController.dispose();
+    _cityController.dispose();
+    super.dispose();
   }
 
   @override
@@ -135,48 +171,14 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit_location_alt),
+            onPressed: _manualUpdate,
+            tooltip: 'تغيير الدولة والمدينة',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _fetchLocationAndTimes,
-            tooltip: 'تحديث المواقيت',
-          ),
-          PopupMenuButton<CalculationMethod>(
-            icon: const Icon(Icons.tune),
-            tooltip: 'اختيار طريقة الحساب',
-            onSelected: _changeMethod,
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: CalculationMethod.umm_al_qura,
-                child: Text('أم القرى (مكة)'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.muslim_world_league,
-                child: Text('رابطة العالم الإسلامي'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.egyptian,
-                child: Text('الهيئة المصرية'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.karachi,
-                child: Text('جامعة العلوم كراتشي'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.dubai,
-                child: Text('دبي'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.kuwait,
-                child: Text('الكويت'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.qatar,
-                child: Text('قطر'),
-              ),
-              PopupMenuItem(
-                value: CalculationMethod.singapore,
-                child: Text('سنغافورة'),
-              ),
-            ],
+            tooltip: 'تحديث تلقائي بالموقع',
           ),
         ],
       ),
@@ -187,7 +189,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                 children: [
                   CircularProgressIndicator(color: colorScheme.primary),
                   const SizedBox(height: 16),
-                  Text('جاري تحديد الموقع وحساب المواقيت...',
+                  Text('جاري تحميل المواقيت...',
                       style: GoogleFonts.ibmPlexSansArabic(
                           color: colorScheme.primary)),
                 ],
@@ -200,7 +202,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.location_off_rounded,
+                        Icon(Icons.error_outline,
                             size: 64, color: colorScheme.error),
                         const SizedBox(height: 16),
                         Text(_errorMessage,
