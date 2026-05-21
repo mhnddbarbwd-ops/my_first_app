@@ -4,7 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart'; // 🆕
+import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
 import 'package:nafahat/models/user_progress.dart';
 import 'package:nafahat/models/challenge_model.dart';
 import 'package:nafahat/models/reading_goal.dart';
@@ -20,7 +20,7 @@ final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.system
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🆕 تهيئة خدمة القرآن (مطلوبة لمكتبة flutter_quran_tajwid)
+  // تهيئة خدمة القرآن (مطلوبة لعمل RecitationScreen)
   await QuranJsonService().initialize();
 
   await Hive.initFlutter();
@@ -90,15 +90,45 @@ class _NafahatAppState extends State<NafahatApp> {
               useMaterial3: true,
               colorScheme: lightColorScheme,
               scaffoldBackgroundColor: lightBg,
-              textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.light().textTheme).apply(bodyColor: const Color(0xFF2D312E), displayColor: deepEmerald),
-              appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, elevation: 0, centerTitle: true, iconTheme: const IconThemeData(color: deepEmerald), titleTextStyle: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900, fontSize: 24, color: deepEmerald)),
+              textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+                ThemeData.light().textTheme,
+              ).apply(
+                bodyColor: const Color(0xFF2D312E),
+                displayColor: deepEmerald,
+              ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                centerTitle: true,
+                iconTheme: const IconThemeData(color: deepEmerald),
+                titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  color: deepEmerald,
+                ),
+              ),
             ),
             darkTheme: ThemeData(
               useMaterial3: true,
               colorScheme: darkColorScheme,
               scaffoldBackgroundColor: darkBg,
-              textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme).apply(bodyColor: const Color(0xFFE0E0E0), displayColor: primaryGold),
-              appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, elevation: 0, centerTitle: true, iconTheme: const IconThemeData(color: primaryGold), titleTextStyle: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900, fontSize: 24, color: primaryGold)),
+              textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
+                ThemeData.dark().textTheme,
+              ).apply(
+                bodyColor: const Color(0xFFE0E0E0),
+                displayColor: primaryGold,
+              ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                centerTitle: true,
+                iconTheme: const IconThemeData(color: primaryGold),
+                titleTextStyle: GoogleFonts.ibmPlexSansArabic(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  color: primaryGold,
+                ),
+              ),
             ),
             home: const OnboardingScreen(),
           );

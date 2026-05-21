@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
 import 'package:nafahat/services/gemini_service.dart';
-import 'package:nafahat/widgets/tajweed_recitation_wrapper.dart'; // 🆕 استيراد الغلاف
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
+import 'dart:io';
 
 class TajweedScreen extends StatefulWidget {
   const TajweedScreen({super.key});
@@ -11,27 +14,62 @@ class TajweedScreen extends StatefulWidget {
 }
 
 class _TajweedScreenState extends State<TajweedScreen> {
+  bool _hideText = false;
+  bool _isRecording = false;
   List<Map<String, dynamic>> _errors = [];
-  String _currentSurah = 'الفاتحة';
-  int _currentVerse = 1;
-  bool _isListening = false;
+  final _recorder = Record();
 
-  // محاكاة بدء التصحيح (يتم استبدالها بالربط الحقيقي لاحقًا)
-  void _startListening() {
-    setState(() {
-      _isListening = true;
-      _errors = [];
-    });
+  // بدء التسجيل الحقيقي
+  Future<void> _startListening() async {
+    if (await Permission.microphone.request().isGranted) {
+      try {
+        if (await _recorder.hasPermission()) {
+          await _recorder.start();
+          setState(() => _isRecording = true);
 
-    // محاكاة استقبال الأخطاء بعد 3 ثوانٍ
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _errors = GeminiService.getMockErrors(_currentSurah, _currentVerse);
-          _isListening = false;
-        });
+          // تسجيل لمدة 5 ثوانٍ كتجربة، ثم التوقف تلقائياً
+          await Future.delayed(const Duration(seconds: 5));
+          if (!mounted) return;
+
+          final path = await _recorder.stop();
+          setState(() => _isRecording = false);
+
+          if (path != null) {
+            _processAudioFile(path);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطأ في التسجيل: $e')),
+          );
+        }
       }
-    });
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('يرجى منح إذن الميكروفون')),
+        );
+      }
+    }
+  }
+
+  // معالجة الملف الصوتي: مؤقتاً نرسل نصاً تجريبياً، وسنضيف التعرف على الصوت لاحقاً
+  Future<void> _processAudioFile(String filePath) async {
+    // TODO: استخدم مكتبة speech_to_text لتحويل الصوت إلى نص عربي
+    final recognizedText = 'الحمد لله رب العالمين'; // سيتم استبداله بالنص الفعلي
+    const verseText = 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ';
+
+    final result = await GeminiService.analyzeRecitation(
+      recognizedText: recognizedText,
+      verseText: verseText,
+    );
+
+    if (mounted) {
+      setState(() {
+        _errors = result;
+      });
+    }
   }
 
   @override
@@ -40,135 +78,70 @@ class _TajweedScreenState extends State<TajweedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'معلم التجويد',
-          style: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            color: colorScheme.primary,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: Text('معلم التجويد', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900, color: colorScheme.primary)),
         actions: [
-          // زر بدء التصحيح
           IconButton(
-            icon: Icon(
-              _isListening ? Icons.mic : Icons.mic_none,
-              color: _isListening ? Colors.red : colorScheme.primary,
-            ),
-            onPressed: _isListening ? null : _startListening,
-            tooltip: 'بدء الاستماع',
+            icon: Icon(_hideText ? Icons.visibility_off : Icons.visibility, color: colorScheme.primary),
+            onPressed: () => setState(() => _hideText = !_hideText),
           ),
         ],
       ),
       body: Column(
         children: [
-          // الجزء العلوي: المصحف (باستخدام الغلاف الآمن)
-          const Expanded(
+          Expanded(
             flex: 3,
-            child: TajweedRecitationWrapper(), // 🆕 استبدال RecitationScreen بالغلاف
-          ),
-          // فاصل
-          Divider(color: colorScheme.primary.withOpacity(0.2), height: 1),
-          // الجزء السفلي: شريط الأخطاء
-          Container(
-            height: _errors.isEmpty ? 80 : 140,
-            color: colorScheme.surface,
-            child: _errors.isEmpty
-                ? Center(
-                    child: Text(
-                      _isListening ? 'جاري الاستماع...' : 'اضغط على الميكروفون لبدء التصحيح',
-                      style: GoogleFonts.ibmPlexSansArabic(
-                        color: colorScheme.onSurface.withOpacity(0.5),
-                        fontSize: 14,
-                      ),
+            child: Stack(
+              children: [
+                const RecitationScreen(),
+                if (_hideText)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withOpacity(0.7),
+                      child: const Center(child: Text('النص مخفي', style: TextStyle(color: Colors.white, fontSize: 24))),
                     ),
-                  )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade400, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'تم اكتشاف ${_errors.length} ملاحظة',
-                              style: GoogleFonts.ibmPlexSansArabic(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                            const Spacer(),
-                            TextButton(
-                              onPressed: () => setState(() => _errors = []),
-                              child: Text('مسح', style: TextStyle(color: colorScheme.primary)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: 70,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: _errors.length,
-                          itemBuilder: (context, index) {
-                            final error = _errors[index];
-                            final isSuccess = error['type'] == 'ممتاز';
-                            return Container(
-                              width: 180,
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: isSuccess
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.red.withOpacity(0.05),
-                                border: Border.all(
-                                  color: isSuccess ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.2),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSuccess ? Icons.check_circle : Icons.warning_rounded,
-                                    color: isSuccess ? Colors.green : Colors.orange,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          error['word']!,
-                                          style: GoogleFonts.ibmPlexSansArabic(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13,
-                                            color: colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          error['message']!,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.6)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
                   ),
+              ],
+            ),
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _isRecording ? null : _startListening,
+                  icon: Icon(_isRecording ? Icons.mic : Icons.mic_none),
+                  label: Text(_isRecording ? 'جاري الاستماع...' : 'ابدأ التصحيح'),
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+                ),
+                const SizedBox(height: 16),
+                if (_errors.isNotEmpty)
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _errors.length,
+                      itemBuilder: (context, index) {
+                        final e = _errors[index];
+                        final isSuccess = e['type'] == 'ممتاز';
+                        return Card(
+                          color: isSuccess ? Colors.green.shade50 : Colors.red.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(e['word'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text(e['message'] ?? '', style: const TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
