@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';  // 🆕
+import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
 import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:nafahat/screens/tajweed_screen.dart';
@@ -45,8 +45,16 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   void _jumpToPage(int page) {
-    if (Navigator.canPop(context)) Navigator.pop(context);
-    setState(() => _currentPage = page);
+    // إغلاق الدرج أو القائمة المنبثقة أولاً
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context); // إغلاق الدرج
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context); // إغلاق مربع حوار البحث
+    }
+    // ضبط الصفحة الجديدة
+    setState(() {
+      _currentPage = page;
+    });
   }
 
   void _onSearchChanged(String query) {
@@ -63,7 +71,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       for (int i = 1; i <= 114; i++) {
         final name = getSurahNameArabic(i);
         if (name.contains(query.trim())) {
-          _surahResults.add({'number': i, 'name': name, 'page': getPageNumber(i, 1)});
+          _surahResults.add({
+            'number': i,
+            'name': name,
+            'page': getPageNumber(i, 1),
+          });
         }
       }
 
@@ -97,7 +109,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           return AlertDialog(
-            title: Text('بحث في القرآن', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900)),
+            title: Text('بحث في القرآن',
+                style: GoogleFonts.ibmPlexSansArabic(
+                    fontWeight: FontWeight.w900)),
             content: SizedBox(
               width: double.maxFinite,
               height: 400,
@@ -112,7 +126,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                     },
                     decoration: InputDecoration(
                       hintText: 'اكتب كلمة أو حرف للبحث...',
-                      prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                      prefixIcon: Icon(Icons.search,
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -129,17 +144,24 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       controller: _searchTabController,
                       children: [
                         _surahResults.isEmpty
-                            ? Center(child: Text('اكتب للبحث عن سورة', style: TextStyle(color: Colors.grey)))
+                            ? Center(
+                                child: Text('اكتب للبحث عن سورة',
+                                    style: TextStyle(color: Colors.grey)))
                             : ListView.builder(
                                 itemCount: _surahResults.length,
                                 itemBuilder: (context, i) {
                                   final s = _surahResults[i];
                                   return ListTile(
                                     leading: CircleAvatar(
-                                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.1),
                                       child: Text('${s['number']}'),
                                     ),
-                                    title: Text(s['name'], style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
+                                    title: Text(s['name'],
+                                        style: GoogleFonts.ibmPlexSansArabic(
+                                            fontWeight: FontWeight.w600)),
                                     subtitle: Text('الصفحة: ${s['page']}'),
                                     onTap: () {
                                       Navigator.pop(ctx);
@@ -149,17 +171,23 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                                 },
                               ),
                         _ayahResults.isEmpty
-                            ? Center(child: Text('اكتب للبحث في الآيات', style: TextStyle(color: Colors.grey)))
+                            ? Center(
+                                child: Text('اكتب للبحث في الآيات',
+                                    style: TextStyle(color: Colors.grey)))
                             : ListView.builder(
                                 itemCount: _ayahResults.length,
                                 itemBuilder: (context, i) {
                                   final a = _ayahResults[i];
                                   return ListTile(
                                     leading: CircleAvatar(
-                                      backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .secondary
+                                          .withOpacity(0.1),
                                       child: Text('${a['surah']}'),
                                     ),
-                                    title: Text('سورة ${a['surahName']} - آية ${a['verse']}'),
+                                    title: Text(
+                                        'سورة ${a['surahName']} - آية ${a['verse']}'),
                                     subtitle: Text('الصفحة: ${a['page']}'),
                                     onTap: () {
                                       Navigator.pop(ctx);
@@ -175,7 +203,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('إغلاق')),
             ],
           );
         },
@@ -183,60 +213,115 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     );
   }
 
-  // 🆕 إظهار فقاعة "معلم التجويد"
   void _showTajweedBubble() {
     final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        margin: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
-        ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 20),
             Container(
-              width: 70, height: 70,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [colorScheme.primary, colorScheme.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
               ),
-              child: const Icon(Icons.spellcheck, color: Colors.white, size: 36),
             ),
             const SizedBox(height: 16),
-            Text('معلم التجويد', style: GoogleFonts.ibmPlexSansArabic(fontSize: 24, fontWeight: FontWeight.w900, color: colorScheme.primary)),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'راجع قراءتك مباشرة. اقرأ الآية وسيُصححها الذكاء الاصطناعي فوراً.\nالكلمات الصحيحة تظهر باللون الأخضر، والأخطاء باللون الأحمر.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSansArabic(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.7), height: 1.5),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 24),
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [colorScheme.primary, colorScheme.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: const Icon(Icons.spellcheck,
+                        color: Colors.white, size: 36),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'معلم التجويد',
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'راجع قراءتك مباشرة. اقرأ الآية وسيُصححها الذكاء الاصطناعي فوراً.\nالكلمات الصحيحة تظهر باللون الأخضر، والأخطاء باللون الأحمر.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.ibmPlexSansArabic(
+                        fontSize: 14,
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const TajweedScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                        label: Text(
+                          'ابدأ جلسة التصحيح',
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const TajweedScreen()));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              ),
-              child: Text('ابدأ جلسة التصحيح', style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-            ),
-            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -250,7 +335,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('القرآن الكريم', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w900, color: colorScheme.primary)),
+        title: Text('القرآن الكريم',
+            style: GoogleFonts.ibmPlexSansArabic(
+                fontWeight: FontWeight.w900, color: colorScheme.primary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -258,7 +345,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
-          // 🆕 زر معلم التجويد
           IconButton(
             icon: Icon(Icons.spellcheck, color: colorScheme.primary),
             onPressed: _showTajweedBubble,
@@ -268,7 +354,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             icon: Icon(Icons.flag_rounded, color: colorScheme.primary),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => QuranChallengeScreen(initialPage: _currentPage)),
+              MaterialPageRoute(
+                  builder: (_) =>
+                      QuranChallengeScreen(initialPage: _currentPage)),
             ),
             tooltip: 'بدء تحدي جديد',
           ),
@@ -283,7 +371,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         initialPageNumber: _currentPage,
         onPageChanged: (page) {
           setState(() => _currentPage = page);
-          Provider.of<UserProgressProvider>(context, listen: false).updateReadPages(page);
+          Provider.of<UserProgressProvider>(context, listen: false)
+              .updateReadPages(page);
         },
       ),
     );
@@ -294,9 +383,14 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       child: Column(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1)),
+            decoration:
+                BoxDecoration(color: colorScheme.primary.withOpacity(0.1)),
             child: Center(
-              child: Text('فهرس المصحف', style: GoogleFonts.ibmPlexSansArabic(fontSize: 22, fontWeight: FontWeight.w900, color: colorScheme.primary)),
+              child: Text('فهرس المصحف',
+                  style: GoogleFonts.ibmPlexSansArabic(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary)),
             ),
           ),
           Expanded(
@@ -309,9 +403,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: colorScheme.primary.withOpacity(0.1),
-                    child: Text('$surahNumber', style: TextStyle(color: colorScheme.primary)),
+                    child: Text('$surahNumber',
+                        style: TextStyle(color: colorScheme.primary)),
                   ),
-                  title: Text(name, style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
+                  title: Text(name,
+                      style: GoogleFonts.ibmPlexSansArabic(
+                          fontWeight: FontWeight.w600)),
                   subtitle: Text('الصفحة: $page'),
                   onTap: () => _jumpToPage(page),
                 );

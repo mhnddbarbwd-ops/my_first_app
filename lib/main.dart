@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart'; // 🆕
 import 'package:nafahat/models/user_progress.dart';
 import 'package:nafahat/models/challenge_model.dart';
 import 'package:nafahat/models/reading_goal.dart';
@@ -18,6 +19,9 @@ final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.system
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🆕 تهيئة خدمة القرآن (مطلوبة لمكتبة flutter_quran_tajwid)
+  await QuranJsonService().initialize();
 
   await Hive.initFlutter();
   Hive.registerAdapter(UserProgressAdapter());
