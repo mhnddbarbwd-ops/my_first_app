@@ -1,4 +1,4 @@
-name: Build & Distribute Android APK
+name: Build and Release APK
 on: [push]
 jobs:
   build:
@@ -15,12 +15,12 @@ jobs:
       - run: flutter pub get
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/nafahat-release.keystore
-      - name: Create Service Account JSON
-        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > service-account.json
       - run: flutter build apk --debug
-      - name: Upload APK to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
+      - name: Create Release and Upload APK
+        uses: softprops/action-gh-release@v2
         with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFile: service-account.json
-          file: build/app/outputs/flutter-apk/app-debug.apk
+          tag_name: release-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          files: build/app/outputs/flutter-apk/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
