@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:nafahat/screens/home_screen.dart';
+import 'package:nafahat/screens/home_screen.dart'; // تأكد من مسار الصفحة الرئيسية
 
+// ==========================================
+// 1. شاشة تسجيل الدخول (Login Screen)
+// ==========================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -12,237 +15,419 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  
   bool _isLoading = false;
-  String? _error;
+  bool _obscurePassword = true;
 
   @override
-  void initState() {
-    super.initState();
-    _checkCurrentUser();
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
-  Future<void> _checkCurrentUser() async {
-    // إذا كان المستخدم مسجلاً مسبقاً، انتقل مباشرة للرئيسية
-    if (FirebaseAuth.instance.currentUser != null) {
+  // عرض رسائل الخطأ بطريقة احترافية
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.ibmPlexSansArabic()),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // تسجيل الدخول بالبريد
+  Future<void> _loginWithEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'حدث خطأ في تسجيل الدخول';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'لا يوجد حساب مرتبط بهذا البريد الإلكتروني.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'كلمة المرور غير صحيحة.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'صيغة البريد الإلكتروني غير صحيحة.';
+      }
+      _showError(errorMessage);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // تسجيل الدخول بجوجل
   Future<void> _signInWithGoogle() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
+    setState(() => _isLoading = true);
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        // المستخدم ألغى تسجيل الدخول
         setState(() => _isLoading = false);
-        return;
+        return; // المستخدم ألغى العملية
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
       await FirebaseAuth.instance.signInWithCredential(credential);
-
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _error = 'فشل تسجيل الدخول: ${e.message}';
-        _isLoading = false;
-      });
     } catch (e) {
-      setState(() {
-        _error = 'حدث خطأ غير متوقع. حاول مجدداً.';
-        _isLoading = false;
-      });
+      _showError('حدث خطأ أثناء تسجيل الدخول بواسطة جوجل.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = const Color(0xFF0B3C18);
+    final accentColor = const Color(0xFFC5A880);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF0B3C18), const Color(0xFF0F1410)]
-                : [const Color(0xFF0B3C18), const Color(0xFFF9F6F0)],
-          ),
-        ),
-        child: SafeArea(
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF9F9F9),
+      body: SafeArea(
+        child: Center(
           child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Form(
+              key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 60),
-
-                  // أيقونة التطبيق الفاخرة
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFC5A880), Color(0xFF0B3C18)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFC5A880).withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.auto_stories_rounded,
-                      size: 60,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
+                  // أيقونة التطبيق
+                  Icon(Icons.auto_stories_rounded, size: 80, color: primaryColor),
+                  const SizedBox(height: 15),
+                  
                   // اسم التطبيق
                   Text(
                     'نَفَحَات',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFFC5A880),
-                      letterSpacing: 2,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // الشعار
-                  Text(
-                    'تطبيق إسلامي متكامل',
-                    style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.white70 : const Color(0xFF2D312E),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // آية قرآنية في بطاقة شفافة
+                  
+                  // الآية بتصميم نظيف وواضح
+                  const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                     decoration: BoxDecoration(
-                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFC5A880).withOpacity(0.3),
-                      ),
+                      color: isDark ? Colors.grey[900] : Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                      border: Border.all(color: accentColor.withOpacity(0.5)),
                     ),
                     child: Text(
                       'وَنَفْسٍ وَمَا سَوَّاهَا',
-                      textAlign: TextAlign.center,
                       style: GoogleFonts.amiri(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFC5A880),
-                        height: 1.8,
+                        color: isDark ? accentColor : primaryColor,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 50),
-
-                  // رسالة الخطأ
-                  if (_error != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.red.withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.ibmPlexSansArabic(
-                          color: Colors.red,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-
-                  // زر Google
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _signInWithGoogle,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Image.network(
-                              'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg',
-                              width: 24,
-                              height: 24,
-                            ),
-                      label: Text(
-                        _isLoading ? 'جاري الدخول...' : 'تسجيل الدخول بحساب Google',
-                        style: GoogleFonts.ibmPlexSansArabic(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0B3C18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 5,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // نص توضيحي
-                  Text(
-                    'بالضغط على الزر أعلاه فإنك توافق على شروط الاستخدام وسياسة الخصوصية',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 11,
-                      color: isDark ? Colors.white38 : const Color(0xFF2D312E).withOpacity(0.4),
                     ),
                   ),
                   const SizedBox(height: 40),
+
+                  // حقل البريد الإلكتروني
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'البريد الإلكتروني',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey[800] : Colors.white,
+                    ),
+                    validator: (value) => value!.isEmpty ? 'يرجى إدخال البريد الإلكتروني' : null,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // حقل كلمة المرور
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'كلمة المرور',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey[800] : Colors.white,
+                    ),
+                    validator: (value) => value!.isEmpty ? 'يرجى إدخال كلمة المرور' : null,
+                  ),
+                  const SizedBox(height: 30),
+
+                  // زر الدخول
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _loginWithEmail,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text('تسجيل الدخول', style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // فاصل
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('أو', style: GoogleFonts.ibmPlexSansArabic(color: Colors.grey)),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // زر جوجل (تم إصلاح خطأ الصورة باستخدام صورة PNG بدلاً من SVG)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _signInWithGoogle,
+                      icon: Image.network(
+                        'https://cdn-icons-png.flaticon.com/512/300/300221.png', // رابط PNG صحيح يعمل في Flutter
+                        height: 24,
+                      ),
+                      label: Text('المتابعة باستخدام حساب Google', style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, color: isDark ? Colors.white : Colors.black)),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        side: BorderSide(color: Colors.grey.shade400),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // الانتقال لإنشاء حساب
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('ليس لديك حساب؟', style: GoogleFonts.ibmPlexSansArabic()),
+                      TextButton(
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
+                        child: Text('إنشاء حساب', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold, color: primaryColor)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 2. شاشة إنشاء حساب (Sign Up Screen)
+// ==========================================
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
+
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message, style: GoogleFonts.ibmPlexSansArabic()), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  Future<void> _signUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      _showError('كلمات المرور غير متطابقة!');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      if (mounted) {
+        // العودة للرئيسية بعد إنشاء الحساب بنجاح
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'حدث خطأ في إنشاء الحساب';
+      if (e.code == 'weak-password') {
+        errorMessage = 'كلمة المرور ضعيفة جداً.';
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = 'هذا البريد الإلكتروني مسجل مسبقاً.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'صيغة البريد الإلكتروني غير صحيحة.';
+      }
+      _showError(errorMessage);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = const Color(0xFF0B3C18);
+
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF9F9F9),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: primaryColor),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'إنشاء حساب جديد',
+                    style: GoogleFonts.ibmPlexSansArabic(fontSize: 28, fontWeight: FontWeight.bold, color: primaryColor),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'انضم إلينا في تطبيق نفحات',
+                    style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // حقل البريد
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'البريد الإلكتروني',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey[800] : Colors.white,
+                    ),
+                    validator: (value) => value!.isEmpty ? 'مطلوب' : null,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // حقل كلمة المرور
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'كلمة المرور',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey[800] : Colors.white,
+                    ),
+                    validator: (value) => value!.length < 6 ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : null,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // حقل تأكيد كلمة المرور
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: _obscureConfirmPassword,
+                    decoration: InputDecoration(
+                      labelText: 'تأكيد كلمة المرور',
+                      prefixIcon: const Icon(Icons.lock_reset),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey[800] : Colors.white,
+                    ),
+                    validator: (value) => value!.isEmpty ? 'مطلوب' : null,
+                  ),
+                  const SizedBox(height: 40),
+
+                  // زر إنشاء الحساب
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _signUp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text('إنشاء الحساب', style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
                 ],
               ),
             ),
