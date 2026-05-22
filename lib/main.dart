@@ -4,12 +4,13 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
 import 'package:nafahat/models/user_progress.dart';
 import 'package:nafahat/models/challenge_model.dart';
 import 'package:nafahat/models/reading_goal.dart';
 import 'package:nafahat/models/quran_challenge.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
-import 'package:nafahat/screens/onboarding_screen.dart';
+import 'package:nafahat/screens/login_screen.dart'; // تم تغيير الاستيراد هنا
 import 'package:nafahat/services/goals_service.dart';
 import 'package:nafahat/services/reminder_service.dart';
 import 'package:nafahat/services/quran_challenge_service.dart';
@@ -18,6 +19,9 @@ final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.system
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تهيئة خدمة القرآن (مطلوبة لعمل RecitationScreen)
+  await QuranJsonService().initialize();
 
   await Hive.initFlutter();
   Hive.registerAdapter(UserProgressAdapter());
@@ -126,7 +130,7 @@ class _NafahatAppState extends State<NafahatApp> {
                 ),
               ),
             ),
-            home: const OnboardingScreen(),
+            home: const LoginScreen(), // تم تغيير الشاشة الرئيسية هنا
           );
         },
       ),
