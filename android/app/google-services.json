@@ -1,41 +1,33 @@
 {
   "project_info": {
-    "project_number": "115309904282",
-    "project_id": "nafahat-69101",
-    "storage_bucket": "nafahat-69101.firebasestorage.app"
+    "project_number": "78421409904",
+    "project_id": "nafhat-195e2",
+    "storage_bucket": "nafhat-195e2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:115309904282:android:7be1948010ecce69af7a23",
+        "mobilesdk_app_id": "1:78421409904:android:e0c36eee45176a22fdb4b5",
         "android_client_info": {
           "package_name": "com.nafahat.quran"
         }
       },
       "oauth_client": [
         {
-          "client_id": "115309904282-mjiini7nc0mglo6vb2m8ch306jji7f57.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.nafahat.quran",
-            "certificate_hash": "1a7855c9f516a7d03c3795a77448eb4beb8fe7d9"
-          }
-        },
-        {
-          "client_id": "115309904282-b1kr5rtakjfop8viv4mk8hm6agpkn652.apps.googleusercontent.com",
+          "client_id": "78421409904-ff6lqlla5700eic4r5m56m45vj9l25ma.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBsV5O0myrCGZ-2dC14y3yNnoJIhy9MbXQ"
+          "current_key": "AIzaSyBQbE8Txm_DtGT_b0SaHh1SLwRvi-bkybM"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "115309904282-b1kr5rtakjfop8viv4mk8hm6agpkn652.apps.googleusercontent.com",
+              "client_id": "78421409904-ff6lqlla5700eic4r5m56m45vj9l25ma.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
