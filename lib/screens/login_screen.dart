@@ -72,7 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      // تم دمج Web Client ID هنا لحل مشكلة الرفض
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+        clientId: '78421409904-ff6lqlla5700eic4r5m56m45vj9l25ma.apps.googleusercontent.com',
+      ).signIn();
+      
       if (googleUser == null) {
         setState(() => _isLoading = false);
         return; // المستخدم ألغى العملية
@@ -217,14 +221,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // زر جوجل (تم إصلاح خطأ الصورة باستخدام صورة PNG بدلاً من SVG)
+                  // زر جوجل
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: OutlinedButton.icon(
                       onPressed: _isLoading ? null : _signInWithGoogle,
                       icon: Image.network(
-                        'https://cdn-icons-png.flaticon.com/512/300/300221.png', // رابط PNG صحيح يعمل في Flutter
+                        'https://cdn-icons-png.flaticon.com/512/300/300221.png', 
                         height: 24,
                       ),
                       label: Text('المتابعة باستخدام حساب Google', style: GoogleFonts.ibmPlexSansArabic(fontSize: 16, color: isDark ? Colors.white : Colors.black)),
@@ -306,7 +310,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         password: _passwordController.text.trim(),
       );
       if (mounted) {
-        // العودة للرئيسية بعد إنشاء الحساب بنجاح
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
