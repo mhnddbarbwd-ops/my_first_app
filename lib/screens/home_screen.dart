@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [colorScheme.surface, themeMode == ThemeMode.dark ? const Color(0xFF0F1410) : colorScheme.surface]
+                ? [colorScheme.surface, isDark ? const Color(0xFF0F1410) : colorScheme.surface]
                 : [colorScheme.primary.withOpacity(0.06), colorScheme.surface],
           ),
         ),
