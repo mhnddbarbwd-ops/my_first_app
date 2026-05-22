@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:nafahat/screens/home_screen.dart'; // تأكد من مسار الصفحة الرئيسية
+import 'package:nafahat/screens/home_screen.dart';
 
 // ==========================================
 // 1. شاشة تسجيل الدخول (Login Screen)
@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   
   bool _isLoading = false;
   bool _obscurePassword = true;
+  String? _errorText; // لعرض الخطأ أعلى الأزرار
 
   @override
   void dispose() {
@@ -29,22 +30,22 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // عرض رسائل الخطأ بطريقة احترافية
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.ibmPlexSansArabic()),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  // عرض رسائل الخطأ بشكل واضح (كود + رسالة)
+  void _showError(String code, String message) {
+    setState(() {
+      _errorText = '[$code] $message';
+    });
   }
 
   // تسجيل الدخول بالبريد
   Future<void> _loginWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -54,15 +55,9 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
     } on FirebaseAuthException catch (e) {
-      String errorMessage = 'حدث خطأ في تسجيل الدخول';
-      if (e.code == 'user-not-found') {
-        errorMessage = 'لا يوجد حساب مرتبط بهذا البريد الإلكتروني.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'كلمة المرور غير صحيحة.';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'صيغة البريد الإلكتروني غير صحيحة.';
-      }
-      _showError(errorMessage);
+      _showError(e.code, e.message ?? 'خطأ غير معروف');
+    } catch (e) {
+      _showError('unknown', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -70,16 +65,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // تسجيل الدخول بجوجل
   Future<void> _signInWithGoogle() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
     try {
-      // تم دمج Web Client ID هنا لحل مشكلة الرفض
       final GoogleSignInAccount? googleUser = await GoogleSignIn(
         clientId: '78421409904-ff6lqlla5700eic4r5m56m45vj9l25ma.apps.googleusercontent.com',
       ).signIn();
       
       if (googleUser == null) {
         setState(() => _isLoading = false);
-        return; // المستخدم ألغى العملية
+        return;
       }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -92,8 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
+    } on FirebaseAuthException catch (e) {
+      _showError(e.code, e.message ?? 'خطأ غير معروف');
     } catch (e) {
-      _showError('حدث خطأ أثناء تسجيل الدخول بواسطة جوجل.');
+      _showError('unknown', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -156,6 +156,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
+
+                  // عرض رسالة الخطأ التفصيلية
+                  if (_errorText != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        _errorText!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          color: Colors.red,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
 
                   // حقل البريد الإلكتروني
                   TextFormField(
@@ -280,6 +302,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String? _errorText;
 
   @override
   void dispose() {
@@ -289,21 +312,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, style: GoogleFonts.ibmPlexSansArabic()), backgroundColor: Colors.redAccent),
-    );
+  void _showError(String code, String message) {
+    setState(() {
+      _errorText = '[$code] $message';
+    });
   }
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      _showError('كلمات المرور غير متطابقة!');
+      _showError('validation', 'كلمات المرور غير متطابقة');
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -317,15 +344,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      String errorMessage = 'حدث خطأ في إنشاء الحساب';
-      if (e.code == 'weak-password') {
-        errorMessage = 'كلمة المرور ضعيفة جداً.';
-      } else if (e.code == 'email-already-in-use') {
-        errorMessage = 'هذا البريد الإلكتروني مسجل مسبقاً.';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'صيغة البريد الإلكتروني غير صحيحة.';
-      }
-      _showError(errorMessage);
+      _showError(e.code, e.message ?? 'خطأ غير معروف');
+    } catch (e) {
+      _showError('unknown', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -363,7 +384,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  // حقل البريد
+                  if (_errorText != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        _errorText!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          color: Colors.red,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -378,7 +419,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // حقل كلمة المرور
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -397,7 +437,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // حقل تأكيد كلمة المرور
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
@@ -416,7 +455,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  // زر إنشاء الحساب
                   SizedBox(
                     width: double.infinity,
                     height: 55,
