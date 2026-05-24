@@ -11,7 +11,6 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -34,6 +33,7 @@ class SettingsScreen extends StatelessWidget {
           // قسم الوقت
           _buildSectionTitle('الوقت والتاريخ', colorScheme),
           _buildCard(
+            context: context,
             child: SwitchListTile(
               title: Text(
                 'تنسيق 24 ساعة',
@@ -52,6 +52,7 @@ class SettingsScreen extends StatelessWidget {
           // قسم الأذكار
           _buildSectionTitle('التذكير بالأذكار', colorScheme),
           _buildCard(
+            context: context,
             child: Column(
               children: [
                 SwitchListTile(
@@ -95,8 +96,8 @@ class SettingsScreen extends StatelessWidget {
                               items: const [
                                 DropdownMenuItem(value: 30, child: Text('كل نصف ساعة')),
                                 DropdownMenuItem(value: 60, child: Text('كل ساعة')),
-                                DropdownMenuItem(value: 120, child: Text('كل ساعتين')),
-                              ],                              onChanged: (val) {
+                                DropdownMenuItem(value: 120, child: Text('كل ساعتين')),                              ],
+                              onChanged: (val) {
                                 if (val != null) settings.setProphetInterval(val);
                               },
                             ),
@@ -112,6 +113,7 @@ class SettingsScreen extends StatelessWidget {
           // قسم الصلاة والأذان
           _buildSectionTitle('تنبيهات الصلاة والأذان', colorScheme),
           _buildCard(
+            context: context,
             child: Column(
               children: [
                 // اختيار المؤذن - تصميم مميز
@@ -143,14 +145,15 @@ class SettingsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(Icons.arrow_forward_ios, color: colorScheme.primary, size: 14),
-                  ),
-                  onTap: () => _showMuazzinDialog(context, settings),
-                ),                const Divider(height: 24),
+                  ),                  onTap: () => _showMuazzinDialog(context, settings),
+                ),
+                const Divider(height: 24),
                 
                 // قائمة تنبيهات الصلاة بتصميم شبكي أنيق
                 Column(
                   children: settings.prayerNotifications.keys.map((prayer) {
-                    return _buildPrayerToggle(prayer, settings.prayerNotifications[prayer]!, settings, colorScheme);
+                    final value = settings.prayerNotifications[prayer] ?? false;
+                    return _buildPrayerToggle(prayer, value, settings, colorScheme);
                   }).toList(),
                 ),
               ],
@@ -162,7 +165,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   // بطاقة أنيقة مع ظل خفيف
-  Widget _buildCard({required Widget child}) {
+  Widget _buildCard({required BuildContext context, required Widget child}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -191,10 +194,10 @@ class SettingsScreen extends StatelessWidget {
             height: 22,
             decoration: BoxDecoration(
               color: color.primary,
-              borderRadius: BorderRadius.circular(2),
-            ),
+              borderRadius: BorderRadius.circular(2),            ),
           ),
-          const SizedBox(width: 10),          Text(
+          const SizedBox(width: 10),
+          Text(
             title,
             style: GoogleFonts.ibmPlexSansArabic(
               fontSize: 17,
@@ -240,13 +243,17 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-            Transform.scale(
+            ),            Transform.scale(
               scale: 0.9,
-              child: Switch(                value: value,
+              child: Switch(
+                value: value,
                 activeColor: colorScheme.primary,
                 activeTrackColor: colorScheme.primary.withOpacity(0.3),
-                onChanged: (val) => _togglePrayerNotification(prayer, val!, settings),
+                onChanged: (val) {
+                  if (val != null) {
+                    _togglePrayerNotification(prayer, val, settings);
+                  }
+                },
               ),
             ),
           ],
@@ -265,7 +272,8 @@ class SettingsScreen extends StatelessWidget {
       case 'الظهر':
         return Icons.light_mode;
       case 'العصر':
-        return Icons.partly_cloudy_day;
+        // ✅ تم التعديل: partly_cloudy_day غير موجود، استبدلناه بـ cloud_queue
+        return Icons.cloud_queue;
       case 'المغرب':
         return Icons.nights_stay;
       case 'العشاء':
@@ -278,21 +286,20 @@ class SettingsScreen extends StatelessWidget {
   // تبديل إشعار الصلاة مع إعادة الجدولة
   Future<void> _togglePrayerNotification(String prayer, bool value, SettingsProvider settings) async {
     await settings.togglePrayerNotification(prayer, value);
-    // إعادة جدولة الإشعارات عند تغيير حالة أي صلاة
     await PrayerTimeService().reschedule();
   }
 
   // نافذة اختيار المؤذن بتصميم راقي
   void _showMuazzinDialog(BuildContext context, SettingsProvider settings) {
     final colorScheme = Theme.of(context).colorScheme;
-    
-    showDialog(
+        showDialog(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          padding: const EdgeInsets.all(24),          child: Column(
+          padding: const EdgeInsets.all(24),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // رأس النافذة
@@ -331,17 +338,13 @@ class SettingsScreen extends StatelessWidget {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () async {
-                          // تحديث المؤذن
                           await settings.setMuazzin(muazzin);
-                          // 🔔 إعادة جدولة الإشعارات تلقائياً
                           await PrayerTimeService().reschedule();
                           
-                          // إغلاق النافذة
-                          if (context.mounted) {
-                            Navigator.pop(ctx);
-                            // إظهار رسالة تأكيد
+                          if (ctx.mounted) {                            Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(                                content: Row(
+                              SnackBar(
+                                content: Row(
                                   children: [
                                     Icon(Icons.check_circle, color: Theme.of(context).colorScheme.onPrimary),
                                     const SizedBox(width: 12),
@@ -373,7 +376,6 @@ class SettingsScreen extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              // دائرة الاختيار
                               Container(
                                 width: 22,
                                 height: 22,
@@ -388,9 +390,7 @@ class SettingsScreen extends StatelessWidget {
                                     ? Icon(Icons.check, size: 14, color: colorScheme.primary)
                                     : null,
                               ),
-                              const SizedBox(width: 14),
-                              
-                              // اسم المؤذن                              Expanded(
+                              const SizedBox(width: 14),                              Expanded(
                                 child: Text(
                                   muazzin,
                                   style: GoogleFonts.ibmPlexSansArabic(
@@ -399,8 +399,6 @@ class SettingsScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              
-                              // أيقونة صوت عند الاختيار
                               if (isSelected)
                                 Icon(Icons.volume_up, size: 18, color: colorScheme.primary),
                             ],
@@ -414,7 +412,6 @@ class SettingsScreen extends StatelessWidget {
               
               const SizedBox(height: 20),
               
-              // زر الإغلاق
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -439,7 +436,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),      ),
+        ),
+      ),
     );
-  }
-}
+  }}
