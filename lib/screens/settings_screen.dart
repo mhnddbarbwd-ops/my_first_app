@@ -307,11 +307,8 @@ class SettingsScreen extends StatelessWidget {
                 value: value,
                 activeColor: colorScheme.primary,
                 activeTrackColor: colorScheme.primary.withOpacity(0.3),
-                onChanged: (val) {
-                  if (val != null) {
-                    _togglePrayerNotification(prayer, val, settings);
-                  }
-                },
+                // ✅ تم التعديل: إزالة مقارنة val != null لأن Switch يعيد bool غير قابل للكون
+                onChanged: (val) => _togglePrayerNotification(prayer, val, settings),
               ),
             ),
           ],
@@ -341,10 +338,10 @@ class SettingsScreen extends StatelessWidget {
 
   Future<void> _togglePrayerNotification(String prayer, bool value, SettingsProvider settings) async {
     await settings.togglePrayerNotification(prayer, value);
-    await PrayerTimeService().reschedule();  }
+    await PrayerTimeService().reschedule();
+  }
 
-  void _showMuazzinDialog(BuildContext context, SettingsProvider settings) {
-    final colorScheme = Theme.of(context).colorScheme;
+  void _showMuazzinDialog(BuildContext context, SettingsProvider settings) {    final colorScheme = Theme.of(context).colorScheme;
     
     showDialog(
       context: context,
@@ -390,10 +387,10 @@ class SettingsScreen extends StatelessWidget {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () async {
-                          await settings.setMuazzin(muazzin);                          await PrayerTimeService().reschedule();
+                          await settings.setMuazzin(muazzin);
+                          await PrayerTimeService().reschedule();
                           
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
+                          if (ctx.mounted) {                            Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Row(
@@ -439,10 +436,10 @@ class SettingsScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: isSelected
-                                    ? Icon(Icons.check, size: 14, color: colorScheme.primary)                                    : null,
+                                    ? Icon(Icons.check, size: 14, color: colorScheme.primary)
+                                    : null,
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
+                              const SizedBox(width: 14),                              Expanded(
                                 child: Text(
                                   muazzin,
                                   style: GoogleFonts.ibmPlexSansArabic(
@@ -488,10 +485,10 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),      ),
+        ),
+      ),
     );
   }
-
   // ✅ دالة عرض سجلات التشخيص
   Future<void> _showLogsDialog(BuildContext context) async {
     final colorScheme = Theme.of(context).colorScheme;
@@ -530,22 +527,22 @@ class SettingsScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Text(
                         log,
-                        style: GoogleFonts.ibmPlexSansArabic(
-                          fontSize: 11,
+                        // ✅ تم التعديل: استخدام copyWith لتغيير خط العرض دون تعارض مع GoogleFonts
+                        style: GoogleFonts.ibmPlexSansArabic(fontSize: 11).copyWith(
                           fontFamily: 'monospace',
                         ),
                       ),
                     )).toList(),
                   ),
-                ),        ),
+                ),
+        ),
         actions: [
-          if (logs.isNotEmpty)
-            TextButton(
+          if (logs.isNotEmpty)            TextButton(
               onPressed: () async {
                 await PrayerTimeService.clearLogs();
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  _showLogsDialog(context); // إعادة فتح لتحديث المحتوى
+                  _showLogsDialog(context);
                 }
               },
               child: Text('مسح السجلات', style: GoogleFonts.ibmPlexSansArabic(color: Colors.red)),

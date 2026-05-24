@@ -215,7 +215,9 @@ class PrayerTimeService {
     try {
       await _log('📤 محاولة جدولة إشعار لـ $prayerName (ID: ${prayerName.hashCode})');
       
-      final result = await _notifications.zonedSchedule(
+      // ✅ تم التعديل: zonedSchedule تعيد Future<void> وليس Future<bool>
+      // لذا نكتفي بانتظار اكتمالها دون مقارنة النتيجة
+      await _notifications.zonedSchedule(
         prayerName.hashCode,
         '🕌 حان وقت صلاة $prayerName',
         'اللهم صل على محمد وآل محمد',
@@ -226,11 +228,8 @@ class PrayerTimeService {
         matchDateTimeComponents: DateTimeComponents.time,
       );
       
-      if (result == true) {
-        await _log('✅ نجحت جدولة $prayerName');
-      } else {
-        await _log('⚠️ نتيجة جدولة $prayerName: $result (قد تكون null في بعض الأجهزة)');
-      }
+      // إذا وصلنا لهنا بدون استثناء، فالجدولة نجحت
+      await _log('✅ نجحت جدولة $prayerName');
     } catch (e, stack) {
       await _log('❌ فشل جدولة $prayerName: $e');
       await _log('📋 تتبع الخطأ: $stack');
@@ -243,8 +242,8 @@ class PrayerTimeService {
       'عمر هشام العربي': 'adhan_omar',
       'علي الملا': 'adhan_ali',
       'مروان قصاص': 'adhan_marwan',
-    };    return muazzinFiles[selectedMuazzin] ?? 'adhan_ali';
-  }
+    };
+    return muazzinFiles[selectedMuazzin] ?? 'adhan_ali';  }
 
   Future<void> reschedule() async {
     await _log('🔄 طلب إعادة جدولة فورية');
@@ -256,6 +255,6 @@ class PrayerTimeService {
 
   void dispose() {
     _dailyScheduler?.cancel();
-    _log('🛑 تم إيقاف الخدمة');
+    // ✅ تم التعديل: إزالة _log من dispose لأنها غير متزامنة وقد تسبب مشاكل عند الإغلاق
   }
 }

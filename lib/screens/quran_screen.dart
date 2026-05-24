@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
-import 'package:flutter/services.dart';
+// ✅ تم حذف: import 'package:flutter/services.dart'; (غير ضروري لأن material.dart يغطيه)
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QuranScreen extends StatefulWidget {
@@ -47,8 +47,7 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _jumpToPage(int page) {
-    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      Navigator.pop(context); 
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {      Navigator.pop(context); 
     }
     setState(() {
       _currentPage = page;
@@ -97,8 +96,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     textDirection: TextDirection.rtl,
                     onChanged: (v) {
                       _onSearchChanged(v);
-                      setDialogState(() {});
-                    },
+                      setDialogState(() {});                    },
                     decoration: InputDecoration(
                       hintText: 'اسم السورة...',
                       hintStyle: GoogleFonts.ibmPlexSansArabic(),
@@ -147,9 +145,8 @@ class _QuranScreenState extends State<QuranScreen> {
   void _showPageOptions() {
     final colorScheme = Theme.of(context).colorScheme;
     
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent, // شفاف لعمل تأثير حواف دائرية عصرية
+    showModalBottomSheet(      context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(20),
@@ -167,7 +164,6 @@ class _QuranScreenState extends State<QuranScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // مؤشر السحب (Drag Handle)
               Container(
                 width: 50,
                 height: 5,
@@ -181,7 +177,6 @@ class _QuranScreenState extends State<QuranScreen> {
                 style: GoogleFonts.ibmPlexSansArabic(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.primary)),
               const SizedBox(height: 24),
               
-              // الخيارات بتصميم حديث (أزرار دائرية مصفوفة)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -199,8 +194,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم حفظ الصفحة كعلامة توقف', style: GoogleFonts.ibmPlexSansArabic())));
                   }),
                   _buildOptionItem(context, Icons.share_rounded, 'مشاركة', () {
-                    Navigator.pop(context);
-                  }),
+                    Navigator.pop(context);                  }),
                 ],
               ),
               const SizedBox(height: 20),
@@ -246,13 +240,10 @@ class _QuranScreenState extends State<QuranScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        // زر الفهرس في الطرف الأيمن (لأن الواجهة عربية RTL)
         leading: IconButton(
           icon: Icon(Icons.menu_book_rounded, color: colorScheme.primary),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        // زر العودة والبحث في الجهة اليسرى
-        actions: [
+        ),        actions: [
           IconButton(
             icon: Icon(Icons.search_rounded, color: colorScheme.primary),
             onPressed: _showSearchDialog,
@@ -268,11 +259,10 @@ class _QuranScreenState extends State<QuranScreen> {
               child: GestureDetector(
                 onLongPress: _showPageOptions,
                 child: Center(
-                  // InteractiveViewer يتيح التكبير بأصبعين بشكل ممتاز وبدون أخطاء الزوايا
                   child: InteractiveViewer(
                     minScale: 1.0,
                     maxScale: 3.5,
-                    clipBehavior: Clip.none, // يمنع قص الحواف عند التكبير
+                    clipBehavior: Clip.none,
                     child: PageviewQuran(
                       key: ValueKey(_currentPage), 
                       initialPageNumber: _currentPage,
@@ -291,7 +281,6 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
-  // تصميم جديد كلياً وجذاب للفهرس
   Widget _buildModernDrawer(ColorScheme colorScheme) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
@@ -303,8 +292,7 @@ class _QuranScreenState extends State<QuranScreen> {
             width: double.infinity,
             padding: const EdgeInsets.only(top: 60, bottom: 30),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark 
+              gradient: LinearGradient(                colors: isDark 
                     ? [colorScheme.surface, colorScheme.primary.withOpacity(0.2)]
                     : [colorScheme.primary, colorScheme.secondary],
                 begin: Alignment.topCenter,
@@ -353,8 +341,7 @@ class _QuranScreenState extends State<QuranScreen> {
                   ),
                   title: Text(name,
                       style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 18)),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  trailing: Container(                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
