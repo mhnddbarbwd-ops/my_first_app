@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:nafahat/main.dart';
+import 'package:nafahat/providers/settings_provider.dart';
+import 'package:nafahat/screens/settings_screen.dart'; // استيراد صفحة الإعدادات
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
@@ -22,7 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String _hijriDate = '';
   Timer? _timer;
   
-  // متغير لتخزين شكل بطاقة الوقت (من 0 إلى 4)
   int _timeCardStyleIndex = 0; 
 
   @override
@@ -40,20 +42,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateDateTime() {
+    if (!mounted) return;
+    
+    // جلب الإعدادات لمعرفة تنسيق الوقت (12 أو 24)
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
     final makkahTime = DateTime.now().toUtc().add(const Duration(hours: 3));
-    final timeFormat = DateFormat('hh:mm a', 'ar');
+    
+    // تطبيق التنسيق بناءً على الإعدادات
+    final timeFormat = DateFormat(settings.is24HourFormat ? 'HH:mm' : 'hh:mm a', 'ar');
+    
     final today = HijriDate.now();
     const months = [
       'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
       'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
       'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
     ];
-    if (mounted) {
-      setState(() {
-        _currentTime = timeFormat.format(makkahTime);
-        _hijriDate = '${today.hDay} ${months[today.hMonth - 1]} ${today.hYear} هـ';
-      });
-    }
+    
+    setState(() {
+      _currentTime = timeFormat.format(makkahTime);
+      _hijriDate = '${today.hDay} ${months[today.hMonth - 1]} ${today.hYear} هـ';
+    });
   }
 
   String _getGreeting() {
@@ -66,137 +74,149 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // استخدمنا Consumer ليتحدث الوقت فور تغيير التنسيق في الإعدادات
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        final colorScheme = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'نَـفَـحَـات',
-          style: GoogleFonts.ibmPlexSansArabic(
-            fontWeight: FontWeight.w900,
-            fontSize: 26,
-            letterSpacing: 1.5,
-            color: colorScheme.primary,
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: Text(
+              'نَـفَـحَـات',
+              style: GoogleFonts.ibmPlexSansArabic(
+                fontWeight: FontWeight.w900,
+                fontSize: 26,
+                letterSpacing: 1.5,
+                color: colorScheme.primary,
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            actions: [
+              // زر الإعدادات الجديد
+              IconButton(
+                icon: Icon(Icons.settings_rounded, color: colorScheme.primary),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [colorScheme.surface, isDark ? const Color(0xFF0F1410) : colorScheme.surface]
-                : [colorScheme.primary.withOpacity(0.06), colorScheme.surface],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [colorScheme.surface, themeMode == ThemeMode.dark ? const Color(0xFF0F1410) : colorScheme.surface]
+                    : [colorScheme.primary.withOpacity(0.06), colorScheme.surface],
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _getGreeting(),
+                          style: GoogleFonts.ibmPlexSansArabic(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        _buildMiniThemeSwitcher(colorScheme, isDark),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    _buildCustomizableTimeCard(colorScheme, isDark),
+                    const SizedBox(height: 28),
+                    
                     Text(
-                      _getGreeting(),
+                      'الخدمات الإسلامية',
                       style: GoogleFonts.ibmPlexSansArabic(
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : colorScheme.primary,
                       ),
                     ),
-                    _buildMiniThemeSwitcher(colorScheme, isDark),
+                    const SizedBox(height: 16),
+
+                    _buildFeaturedMenuCard(
+                      context: context,
+                      icon: Icons.menu_book_rounded,
+                      label: 'القرآن الكريم',
+                      subtitle: 'تصفح سور وآيات الذكر الحكيم',
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
+                    ),
+                    const SizedBox(height: 16),
+
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      childAspectRatio: 1.0,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      children: [
+                        _buildGridMenuCard(
+                          icon: Icons.access_time_filled_rounded,
+                          label: 'مواقيت الصلاة',
+                          subtitle: 'تحديد حي للموقع والتوقيت',
+                          baseColor: colorScheme.secondary,
+                          colorScheme: colorScheme,
+                          isDark: isDark,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
+                        ),
+                        _buildGridMenuCard(
+                          icon: Icons.auto_stories_rounded,
+                          label: 'الأحاديث النبوية',
+                          subtitle: 'الأربعين النووية بالشرح',
+                          baseColor: const Color(0xFF114B43),
+                          colorScheme: colorScheme,
+                          isDark: isDark,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
+                        ),
+                        _buildGridMenuCard(
+                          icon: Icons.fingerprint_rounded,
+                          label: 'المسبحة',
+                          subtitle: 'عداد الأذكار المرن',
+                          baseColor: const Color(0xFF2E5B3E),
+                          colorScheme: colorScheme,
+                          isDark: isDark,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
+                        ),
+                        _buildGridMenuCard(
+                          icon: Icons.emoji_events_rounded,
+                          label: 'هِمَمْ',
+                          subtitle: 'تحديات واختبارات',
+                          baseColor: isDark ? const Color(0xFF5C3D6E) : const Color(0xFF6A1B9A),
+                          colorScheme: colorScheme,
+                          isDark: isDark,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamScreen())),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
-                const SizedBox(height: 24),
-                
-                // بطاقة الوقت القابلة للتخصيص مع الزر المعزول
-                _buildCustomizableTimeCard(colorScheme, isDark),
-                const SizedBox(height: 28),
-                
-                Text(
-                  'الخدمات الإسلامية',
-                  style: GoogleFonts.ibmPlexSansArabic(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // بطاقة القرآن الكريم بألوانك الأصلية
-                _buildFeaturedMenuCard(
-                  context: context,
-                  icon: Icons.menu_book_rounded,
-                  label: 'القرآن الكريم',
-                  subtitle: 'تصفح سور وآيات الذكر الحكيم',
-                  colorScheme: colorScheme,
-                  isDark: isDark,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen())),
-                ),
-                const SizedBox(height: 16),
-
-                // شبكة الخدمات بألوانك الأصلية
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.0,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _buildGridMenuCard(
-                      icon: Icons.access_time_filled_rounded,
-                      label: 'مواقيت الصلاة',
-                      subtitle: 'تحديد حي للموقع والتوقيت',
-                      baseColor: colorScheme.secondary,
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerTimesScreen())),
-                    ),
-                    _buildGridMenuCard(
-                      icon: Icons.auto_stories_rounded,
-                      label: 'الأحاديث النبوية',
-                      subtitle: 'الأربعين النووية بالشرح',
-                      baseColor: const Color(0xFF114B43),
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithScreen())),
-                    ),
-                    _buildGridMenuCard(
-                      icon: Icons.fingerprint_rounded,
-                      label: 'المسبحة',
-                      subtitle: 'عداد الأذكار المرن',
-                      baseColor: const Color(0xFF2E5B3E),
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen())),
-                    ),
-                    _buildGridMenuCard(
-                      icon: Icons.emoji_events_rounded,
-                      label: 'هِمَمْ',
-                      subtitle: 'تحديات واختبارات',
-                      baseColor: isDark ? const Color(0xFF5C3D6E) : const Color(0xFF6A1B9A),
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HimamScreen())),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -257,13 +277,12 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _buildSelectedTimeCardStyle(colorScheme, isDark),
         
-        // زر الإعدادات المعزول بخلفية داكنة شبه شفافة ليظهر دائماً بشكل ممتاز
         Positioned(
           top: 12,
           left: 12,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.35), // خلفية تعزل الزر عن التصميم تحته
+              color: Colors.black.withOpacity(0.35),
               shape: BoxShape.circle,
             ),
             child: PopupMenuButton<int>(
@@ -496,7 +515,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // الاحتفاظ بألوانك الأصلية في هذا الكرت (0xFF0B3C18 و 0xFF165225)
   Widget _buildFeaturedMenuCard({
     required BuildContext context,
     required IconData icon,
@@ -576,7 +594,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // الاحتفاظ بألوانك الأصلية في الشبكة
   Widget _buildGridMenuCard({
     required IconData icon,
     required String label,

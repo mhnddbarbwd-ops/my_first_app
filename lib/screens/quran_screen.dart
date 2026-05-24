@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:nafahat/providers/user_progress_provider.dart';
-import 'package:nafahat/screens/quran_challenge_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -18,8 +18,14 @@ class _QuranScreenState extends State<QuranScreen> {
   final TextEditingController _searchController = TextEditingController();
   
   int _currentPage = 1;
-  double _zoomLevel = 1.0; // متغير التحكم في حجم الخط/الصفحة
   List<Map<String, dynamic>> _surahResults = [];
+  bool _isLoading = true; 
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastSavedPage(); 
+  }
 
   @override
   void dispose() {
@@ -27,24 +33,34 @@ class _QuranScreenState extends State<QuranScreen> {
     super.dispose();
   }
 
+  Future<void> _loadLastSavedPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentPage = prefs.getInt('last_quran_page') ?? 1;
+      _isLoading = false; 
+    });
+  }
+
+  Future<void> _saveCurrentPage(int page) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_quran_page', page);
+  }
+
   void _jumpToPage(int page) {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      Navigator.pop(context); // إغلاق الدرج فقط
+      Navigator.pop(context); 
     }
     setState(() {
       _currentPage = page;
-      _zoomLevel = 1.0; // إعادة الحجم للطبيعي عند تغيير الصفحة
     });
+    _saveCurrentPage(page);
   }
 
   void _onSearchChanged(String query) {
     if (query.trim().isEmpty) {
-      setState(() {
-        _surahResults = [];
-      });
+      setState(() => _surahResults = []);
       return;
     }
-
     setState(() {
       _surahResults = [];
       for (int i = 1; i <= 114; i++) {
@@ -111,7 +127,7 @@ class _QuranScreenState extends State<QuranScreen> {
                                     style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
                                 subtitle: Text('صفحة: ${s['page']}', style: GoogleFonts.ibmPlexSansArabic()),
                                 onTap: () {
-                                  Navigator.of(ctx).pop(); // إغلاق مربع البحث فقط بشكل آمن
+                                  Navigator.of(ctx).pop(); 
                                   _jumpToPage(s['page'] as int);
                                 },
                               );
@@ -127,60 +143,67 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
-  // خيارات الآيات / الصفحة عند الضغط المطول
+  // القائمة المنبثقة العصرية عند الضغط المطول
   void _showPageOptions() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent, // شفاف لعمل تأثير حواف دائرية عصرية
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // مؤشر السحب (Drag Handle)
               Container(
-                width: 40,
+                width: 50,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               const SizedBox(height: 20),
               Text('خيارات الصفحة $_currentPage', 
-                style: GoogleFonts.ibmPlexSansArabic(fontSize: 18, fontWeight: FontWeight.bold)),
+                style: GoogleFonts.ibmPlexSansArabic(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              const SizedBox(height: 24),
+              
+              // الخيارات بتصميم حديث (أزرار دائرية مصفوفة)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildOptionItem(context, Icons.menu_book_rounded, 'تفسير', () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('سيتم إضافة مكتبة التفسير قريباً', style: GoogleFonts.ibmPlexSansArabic())));
+                  }),
+                  _buildOptionItem(context, Icons.volume_up_rounded, 'استماع', () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('سيتم تشغيل صوت السورة قريباً', style: GoogleFonts.ibmPlexSansArabic())));
+                  }),
+                  _buildOptionItem(context, Icons.bookmark_add_rounded, 'حفظ', () {
+                    _saveCurrentPage(_currentPage);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم حفظ الصفحة كعلامة توقف', style: GoogleFonts.ibmPlexSansArabic())));
+                  }),
+                  _buildOptionItem(context, Icons.share_rounded, 'مشاركة', () {
+                    Navigator.pop(context);
+                  }),
+                ],
+              ),
               const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.bookmark_add_outlined),
-                title: Text('حفظ كعلامة توقف', style: GoogleFonts.ibmPlexSansArabic()),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم حفظ الصفحة $_currentPage في العلامات', style: GoogleFonts.ibmPlexSansArabic())),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.copy),
-                title: Text('نسخ محتوى الصفحة', style: GoogleFonts.ibmPlexSansArabic()),
-                onTap: () {
-                  // هنا يتم وضع كود استخراج النص إذا كانت الحزمة تدعمه، أو نسخ الرابط
-                  Clipboard.setData(ClipboardData(text: 'القرآن الكريم - صفحة $_currentPage'));
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم النسخ', style: GoogleFonts.ibmPlexSansArabic())),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share_outlined),
-                title: Text('مشاركة', style: GoogleFonts.ibmPlexSansArabic()),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
             ],
           ),
         );
@@ -188,25 +211,25 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
-  void _handleMenuSelection(String value) {
-    switch (value) {
-      case 'challenge':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => QuranChallengeScreen(initialPage: _currentPage)),
-        );
-        break;
-      case 'zoom_in':
-        setState(() {
-          if (_zoomLevel < 2.5) _zoomLevel += 0.2;
-        });
-        break;
-      case 'zoom_out':
-        setState(() {
-          if (_zoomLevel > 1.0) _zoomLevel -= 0.2;
-        });
-        break;
-    }
+  Widget _buildOptionItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: colorScheme.primary, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 13)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -217,121 +240,128 @@ class _QuranScreenState extends State<QuranScreen> {
       key: _scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('القرآن',
+        title: Text('القرآن الكريم',
             style: GoogleFonts.ibmPlexSansArabic(
                 fontWeight: FontWeight.bold, fontSize: 22, color: colorScheme.primary)),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        leading: const BackButton(), // زر العودة فقط
+        // زر الفهرس في الطرف الأيمن (لأن الواجهة عربية RTL)
+        leading: IconButton(
+          icon: Icon(Icons.menu_book_rounded, color: colorScheme.primary),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
+        // زر العودة والبحث في الجهة اليسرى
         actions: [
-          IconButton(
-            icon: Icon(Icons.format_list_bulleted_rounded, color: colorScheme.primary),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ),
           IconButton(
             icon: Icon(Icons.search_rounded, color: colorScheme.primary),
             onPressed: _showSearchDialog,
           ),
-          PopupMenuButton<String>(
-            icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.primary),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            onSelected: _handleMenuSelection,
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem(
-                value: 'challenge',
-                child: Row(
-                  children: [
-                    Icon(Icons.flag_outlined, color: colorScheme.primary, size: 20),
-                    const SizedBox(width: 10),
-                    Text('تحدي جديد', style: GoogleFonts.ibmPlexSansArabic()),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'zoom_in',
-                child: Row(
-                  children: [
-                    Icon(Icons.zoom_in, color: colorScheme.primary, size: 20),
-                    const SizedBox(width: 10),
-                    Text('تكبير الخط', style: GoogleFonts.ibmPlexSansArabic()),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'zoom_out',
-                child: Row(
-                  children: [
-                    Icon(Icons.zoom_out, color: colorScheme.primary, size: 20),
-                    const SizedBox(width: 10),
-                    Text('تصغير الخط', style: GoogleFonts.ibmPlexSansArabic()),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          const BackButton(), 
           const SizedBox(width: 8),
         ],
       ),
-      drawer: _buildNavigationDrawer(colorScheme),
-      body: SafeArea(
-        child: GestureDetector(
-          onLongPress: _showPageOptions,
-          child: Center(
-            child: InteractiveViewer(
-              minScale: 1.0,
-              maxScale: 3.0,
-              // التحكم برمجياً عبر المتغير الخاص بنا
-              transformationController: TransformationController(
-                Matrix4.identity()..scale(_zoomLevel),
-              ),
-              child: PageviewQuran(
-                key: ValueKey(_currentPage),
-                initialPageNumber: _currentPage,
-                onPageChanged: (page) {
-                  setState(() {
-                    _currentPage = page;
-                    _zoomLevel = 1.0; // إعادة الحجم عند تغيير الصفحة
-                  });
-                  Provider.of<UserProgressProvider>(context, listen: false).updateReadPages(page);
-                },
+      drawer: _buildModernDrawer(colorScheme),
+      body: _isLoading 
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+          : SafeArea(
+              child: GestureDetector(
+                onLongPress: _showPageOptions,
+                child: Center(
+                  // InteractiveViewer يتيح التكبير بأصبعين بشكل ممتاز وبدون أخطاء الزوايا
+                  child: InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 3.5,
+                    clipBehavior: Clip.none, // يمنع قص الحواف عند التكبير
+                    child: PageviewQuran(
+                      key: ValueKey(_currentPage), 
+                      initialPageNumber: _currentPage,
+                      onPageChanged: (page) {
+                        setState(() {
+                          _currentPage = page;
+                        });
+                        _saveCurrentPage(page); 
+                        Provider.of<UserProgressProvider>(context, listen: false).updateReadPages(page);
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
-  Widget _buildNavigationDrawer(ColorScheme colorScheme) {
+  // تصميم جديد كلياً وجذاب للفهرس
+  Widget _buildModernDrawer(ColorScheme colorScheme) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Drawer(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.05)),
-            child: Center(
-              child: Text('الفهرس',
-                  style: GoogleFonts.ibmPlexSansArabic(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary)),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 60, bottom: 30),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark 
+                    ? [colorScheme.surface, colorScheme.primary.withOpacity(0.2)]
+                    : [colorScheme.primary, colorScheme.secondary],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_stories_rounded, size: 40, color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                Text('فهرس السور',
+                    style: GoogleFonts.ibmPlexSansArabic(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+              ],
             ),
           ),
           Expanded(
-            child: ListView.builder(
+            child: ListView.separated(
               physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               itemCount: 114,
+              separatorBuilder: (context, index) => Divider(color: Colors.grey.withOpacity(0.2), height: 1),
               itemBuilder: (context, index) {
                 final surahNumber = index + 1;
                 final page = getPageNumber(surahNumber, 1);
                 final name = getSurahNameArabic(surahNumber);
                 return ListTile(
-                  leading: Text('$surahNumber',
-                      style: GoogleFonts.ibmPlexSansArabic(color: colorScheme.primary, fontSize: 16)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  leading: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(Icons.star_border_rounded, size: 40, color: colorScheme.primary.withOpacity(0.5)),
+                      Text('$surahNumber',
+                          style: GoogleFonts.ibmPlexSansArabic(
+                              color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                   title: Text(name,
-                      style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600)),
-                  trailing: Text('ص $page', style: GoogleFonts.ibmPlexSansArabic(color: Colors.grey)),
+                      style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 18)),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text('ص $page', 
+                      style: GoogleFonts.ibmPlexSansArabic(color: colorScheme.primary, fontWeight: FontWeight.w600)),
+                  ),
                   onTap: () => _jumpToPage(page),
                 );
               },
