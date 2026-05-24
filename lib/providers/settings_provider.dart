@@ -56,7 +56,6 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ تم التعديل: تغيير نوع الإرجاع من void إلى Future<void>
   Future<void> toggleTimeFormat(bool value) async {
     _is24HourFormat = value;
     final prefs = await SharedPreferences.getInstance();
@@ -78,7 +77,6 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ تم التعديل: تغيير نوع الإرجاع من void إلى Future<void>
   Future<void> togglePrayerNotification(String prayer, bool value) async {
     _prayerNotifications[prayer] = value;
     final prefs = await SharedPreferences.getInstance();
@@ -96,9 +94,9 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ تم التعديل: تغيير نوع الإرجاع من void إلى Future<void>  Future<void> setMuazzin(String muazzin) async {
-    _selectedMuazzin = muazzin;
-    final prefs = await SharedPreferences.getInstance();
+  // ✅ تم إصلاح الخطأ: فصل التعليق عن تعريف الدالة بسطر جديد
+  Future<void> setMuazzin(String muazzin) async {
+    _selectedMuazzin = muazzin;    final prefs = await SharedPreferences.getInstance();
     await prefs.setString('muazzin', muazzin);
     notifyListeners();
   }
