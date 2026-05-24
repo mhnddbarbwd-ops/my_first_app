@@ -4,7 +4,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:hijri_date/hijri_date.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_quran_tajwid/flutter_quran_tajwid.dart';
 
 // الموديلات
 import 'package:nafahat/models/user_progress.dart';
@@ -14,7 +13,7 @@ import 'package:nafahat/models/quran_challenge.dart';
 
 // المزودات (Providers)
 import 'package:nafahat/providers/user_progress_provider.dart';
-import 'package:nafahat/providers/settings_provider.dart'; // تم إضافة مزود الإعدادات هنا
+import 'package:nafahat/providers/settings_provider.dart'; 
 
 // الصفحات والخدمات
 import 'package:nafahat/screens/onboarding_screen.dart';
@@ -26,9 +25,6 @@ final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.system
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // تهيئة خدمة القرآن (مطلوبة لعمل RecitationScreen)
-  await QuranJsonService().initialize();
 
   await Hive.initFlutter();
   Hive.registerAdapter(UserProgressAdapter());
@@ -85,7 +81,7 @@ class _NafahatAppState extends State<NafahatApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProgressProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()), // تم تفعيل مزود الإعدادات هنا
+        ChangeNotifierProvider(create: (_) => SettingsProvider()), 
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: appThemeNotifier,

@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:nafahat/main.dart';
 import 'package:nafahat/providers/settings_provider.dart';
-import 'package:nafahat/screens/settings_screen.dart'; // استيراد صفحة الإعدادات
+import 'package:nafahat/screens/settings_screen.dart'; 
 import 'package:nafahat/screens/quran_screen.dart';
 import 'package:nafahat/screens/tasbih_screen.dart';
 import 'package:nafahat/screens/hadith_screen.dart';
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
             elevation: 0,
             centerTitle: true,
             actions: [
-              // زر الإعدادات الجديد
+              // زر الإعدادات
               IconButton(
                 icon: Icon(Icons.settings_rounded, color: colorScheme.primary),
                 onPressed: () {
@@ -111,8 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
+                // تم تصحيح الخطأ هنا (تم استبدال themeMode بـ isDark)
                 colors: isDark
-                    ? [colorScheme.surface, themeMode == ThemeMode.dark ? const Color(0xFF0F1410) : colorScheme.surface]
+                    ? [colorScheme.surface, const Color(0xFF0F1410)]
                     : [colorScheme.primary.withOpacity(0.06), colorScheme.surface],
               ),
             ),
