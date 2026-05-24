@@ -159,12 +159,72 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // ✅ قسم جديد: أدوات التشخيص
+          _buildSectionTitle('أدوات التشخيص', colorScheme),
+          _buildCard(
+            context: context,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.bug_report, color: Colors.orange, size: 22),
+                  ),
+                  title: Text(
+                    'سجلات الأذان',
+                    style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'عرض تفاصيل تشغيل خدمة الأذان للأغراض التشخيصية',
+                    style: GoogleFonts.ibmPlexSansArabic(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.7)),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, color: colorScheme.primary, size: 14),
+                  onTap: () => _showLogsDialog(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.refresh, color: Colors.red, size: 22),                  ),
+                  title: Text(
+                    'إعادة جدولة فورية',
+                    style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'تحديث جميع إشعارات الصلاة الآن',
+                    style: GoogleFonts.ibmPlexSansArabic(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.7)),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, color: colorScheme.primary, size: 14),
+                  onTap: () async {
+                    await PrayerTimeService().reschedule();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✅ تم إعادة جدولة الإشعارات', style: GoogleFonts.ibmPlexSansArabic()),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // بطاقة أنيقة مع ظل خفيف
   Widget _buildCard({required BuildContext context, required Widget child}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -183,9 +243,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // عنوان القسم بتصميم مميز
-  Widget _buildSectionTitle(String title, ColorScheme color) {
-    return Padding(
+  Widget _buildSectionTitle(String title, ColorScheme color) {    return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 12),
       child: Row(
         children: [
@@ -194,7 +252,8 @@ class SettingsScreen extends StatelessWidget {
             height: 22,
             decoration: BoxDecoration(
               color: color.primary,
-              borderRadius: BorderRadius.circular(2),            ),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           const SizedBox(width: 10),
           Text(
@@ -210,7 +269,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // عنصر تبديل الصلاة بتصميم شبكي
   Widget _buildPrayerToggle(String prayer, bool value, SettingsProvider settings, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -234,8 +292,7 @@ class SettingsScreen extends StatelessWidget {
                   size: 20,
                   color: value ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.6),
                 ),
-                const SizedBox(width: 12),
-                Text(
+                const SizedBox(width: 12),                Text(
                   'أذان $prayer',
                   style: GoogleFonts.ibmPlexSansArabic(
                     fontWeight: value ? FontWeight.w600 : FontWeight.w500,
@@ -243,7 +300,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ],
-            ),            Transform.scale(
+            ),
+            Transform.scale(
               scale: 0.9,
               child: Switch(
                 value: value,
@@ -262,7 +320,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // أيقونة مميزة لكل صلاة
   IconData _getPrayerIcon(String prayer) {
     switch (prayer) {
       case 'الفجر':
@@ -272,7 +329,6 @@ class SettingsScreen extends StatelessWidget {
       case 'الظهر':
         return Icons.light_mode;
       case 'العصر':
-        // ✅ تم التعديل: partly_cloudy_day غير موجود، استبدلناه بـ cloud_queue
         return Icons.cloud_queue;
       case 'المغرب':
         return Icons.nights_stay;
@@ -283,16 +339,14 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  // تبديل إشعار الصلاة مع إعادة الجدولة
   Future<void> _togglePrayerNotification(String prayer, bool value, SettingsProvider settings) async {
     await settings.togglePrayerNotification(prayer, value);
-    await PrayerTimeService().reschedule();
-  }
+    await PrayerTimeService().reschedule();  }
 
-  // نافذة اختيار المؤذن بتصميم راقي
   void _showMuazzinDialog(BuildContext context, SettingsProvider settings) {
     final colorScheme = Theme.of(context).colorScheme;
-        showDialog(
+    
+    showDialog(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -302,7 +356,6 @@ class SettingsScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // رأس النافذة
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -323,7 +376,6 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // قائمة المؤذنين
               Container(
                 constraints: const BoxConstraints(maxHeight: 300),
                 child: ListView.separated(
@@ -338,10 +390,10 @@ class SettingsScreen extends StatelessWidget {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () async {
-                          await settings.setMuazzin(muazzin);
-                          await PrayerTimeService().reschedule();
+                          await settings.setMuazzin(muazzin);                          await PrayerTimeService().reschedule();
                           
-                          if (ctx.mounted) {                            Navigator.pop(ctx);
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Row(
@@ -387,10 +439,10 @@ class SettingsScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: isSelected
-                                    ? Icon(Icons.check, size: 14, color: colorScheme.primary)
-                                    : null,
+                                    ? Icon(Icons.check, size: 14, color: colorScheme.primary)                                    : null,
                               ),
-                              const SizedBox(width: 14),                              Expanded(
+                              const SizedBox(width: 14),
+                              Expanded(
                                 child: Text(
                                   muazzin,
                                   style: GoogleFonts.ibmPlexSansArabic(
@@ -436,7 +488,74 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),      ),
+    );
+  }
+
+  // ✅ دالة عرض سجلات التشخيص
+  Future<void> _showLogsDialog(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final logs = await PrayerTimeService.getLogs();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.bug_report, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Text('🔍 سجلات الأذان', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.bold)),
+          ],
         ),
+        content: SizedBox(
+          width: 350,
+          child: logs.isEmpty
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.info_outline, size: 48, color: colorScheme.onSurface.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد سجلات حتى الآن.\nفعّل صلاة وغيّر الوقت لبدء الاختبار.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.ibmPlexSansArabic(fontSize: 13),
+                    ),
+                  ],
+                )
+              : SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: logs.map((log) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        log,
+                        style: GoogleFonts.ibmPlexSansArabic(
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+                ),        ),
+        actions: [
+          if (logs.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                await PrayerTimeService.clearLogs();
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  _showLogsDialog(context); // إعادة فتح لتحديث المحتوى
+                }
+              },
+              child: Text('مسح السجلات', style: GoogleFonts.ibmPlexSansArabic(color: Colors.red)),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('إغلاق', style: GoogleFonts.ibmPlexSansArabic()),
+          ),
+        ],
       ),
     );
-  }}
+  }
+}
