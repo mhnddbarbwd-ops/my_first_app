@@ -18,7 +18,15 @@ class SettingsProvider with ChangeNotifier {
     'العشاء': true,
   };
 
-  String _selectedMuazzin = 'مكة المكرمة (علي ملا)';
+  String _selectedMuazzin = 'علي الملا';
+
+  // قائمة المؤذنين المتاحة
+  final List<String> _muazzins = [
+    'ناصر القطامي',
+    'عمر هشام العربي',
+    'علي الملا',
+    'مروان قصاص',
+  ];
 
   // Getters
   bool get is24HourFormat => _is24HourFormat;
@@ -26,6 +34,7 @@ class SettingsProvider with ChangeNotifier {
   int get prophetReminderInterval => _prophetReminderInterval;
   Map<String, bool> get prayerNotifications => _prayerNotifications;
   String get selectedMuazzin => _selectedMuazzin;
+  List<String> get muazzins => _muazzins;
 
   SettingsProvider() {
     _loadSettings();
@@ -38,13 +47,12 @@ class SettingsProvider with ChangeNotifier {
     _prophetReminderInterval = prefs.getInt('prophetReminderInterval') ?? 60;
     
     _prayerNotifications['الفجر'] = prefs.getBool('fajr_notif') ?? true;
-    _prayerNotifications['الشروق'] = prefs.getBool('shuruq_notif') ?? false;
-    _prayerNotifications['الظهر'] = prefs.getBool('dhuhr_notif') ?? true;
+    _prayerNotifications['الشروق'] = prefs.getBool('shuruq_notif') ?? false;    _prayerNotifications['الظهر'] = prefs.getBool('dhuhr_notif') ?? true;
     _prayerNotifications['العصر'] = prefs.getBool('asr_notif') ?? true;
     _prayerNotifications['المغرب'] = prefs.getBool('maghrib_notif') ?? true;
     _prayerNotifications['العشاء'] = prefs.getBool('isha_notif') ?? true;
 
-    _selectedMuazzin = prefs.getString('muazzin') ?? 'مكة المكرمة (علي ملا)';
+    _selectedMuazzin = prefs.getString('muazzin') ?? 'علي الملا';
     notifyListeners();
   }
 
@@ -59,7 +67,6 @@ class SettingsProvider with ChangeNotifier {
     _prophetReminderEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('prophetReminderEnabled', value);
-    // هنا مستقبلاً نضع كود جدولة الإشعار الفعلي
     notifyListeners();
   }
 
@@ -74,7 +81,6 @@ class SettingsProvider with ChangeNotifier {
     _prayerNotifications[prayer] = value;
     final prefs = await SharedPreferences.getInstance();
     
-    // حفظ حسب اسم الصلاة
     String key = '';
     switch(prayer) {
       case 'الفجر': key = 'fajr_notif'; break;
@@ -90,8 +96,20 @@ class SettingsProvider with ChangeNotifier {
 
   void setMuazzin(String muazzin) async {
     _selectedMuazzin = muazzin;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('muazzin', muazzin);
+    final prefs = await SharedPreferences.getInstance();    await prefs.setString('muazzin', muazzin);
     notifyListeners();
+  }
+
+  // دالة مساعدة للحصول على مسار ملف الصوت حسب المؤذن المختار
+  String getMuazzinAudioPath() {
+    final Map<String, String> muazzinFiles = {
+      'ناصر القطامي': 'آذان ناصر القطامي.mp3',
+      'عمر هشام العربي': 'آذان عمر هشام العربي.mp3',
+      'علي الملا': 'آذان علي الملا.mp3',
+      'مروان قصاص': 'آذان مروان قصاص.mp3',
+    };
+    
+    final String fileName = muazzinFiles[_selectedMuazzin] ?? 'آذان علي الملا.mp3';
+    return 'assets/adhan/$fileName';
   }
 }

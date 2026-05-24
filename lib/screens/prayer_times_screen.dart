@@ -5,6 +5,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:adhan/adhan.dart';
 import 'package:intl/intl.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 
 class PrayerTimesScreen extends StatefulWidget {
   const PrayerTimesScreen({super.key});
@@ -31,12 +34,20 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   Prayer _nextPrayerEnum = Prayer.none;
   String _nextPrayerName = '';
 
+  // مشغل الصوت
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  String? _currentlyPlayingPrayer;
+  bool _isAdhanPlaying = false;
+
+  // تتبع آخر صلاة تم تشغيل الأذان لها لتجنب التكرار
+  String? _lastTriggeredPrayer;
+  DateTime? _lastTriggeredDate;
+
   final Map<String, CalculationMethod> _calculationMethods = {
     'تقويم أم القرى (مكة / اليمن / الخليج)': CalculationMethod.umm_al_qura,
     'رابطة العالم الإسلامي': CalculationMethod.muslim_world_league,
     'الهيئة المصرية العامة للمساحة': CalculationMethod.egyptian,
-    'جامعة العلوم الإسلامية (كراتشي)': CalculationMethod.karachi,
-    'الاتحاد الإسلامي بأمريكا الشمالية': CalculationMethod.north_america,
+    'جامعة العلوم الإسلامية (كراتشي)': CalculationMethod.karachi,    'الاتحاد الإسلامي بأمريكا الشمالية': CalculationMethod.north_america,
     'دبي / الإمارات': CalculationMethod.dubai,
     'الكويت': CalculationMethod.kuwait,
     'قطر': CalculationMethod.qatar,
@@ -46,12 +57,28 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   void initState() {
     super.initState();
     _loadTimesFromGPS();
+    
+    // الاستماع لتغييرات الإعدادات (مثل تغيير المؤذن)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<SettingsProvider>().addListener(_onSettingsChanged);
+      }
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _audioPlayer.dispose();
+    if (mounted) {
+      context.read<SettingsProvider>().removeListener(_onSettingsChanged);
+    }
     super.dispose();
+  }
+
+  // عند تغيير الإعدادات (مثل المؤذن)
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
   }
 
   // 1. تحديد الموقع بالـ GPS
@@ -69,8 +96,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) throw 'تم رفض صلاحية الموقع.';
-      }
-      if (permission == LocationPermission.deniedForever) {
+      }      if (permission == LocationPermission.deniedForever) {
         throw 'صلاحية الموقع مرفوضة. استخدم البحث اليدوي.';
       }
 
@@ -119,8 +145,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         _calculateAdhanTimes();
       } else {
         throw 'لم يتم العثور على الموقع.';
-      }
-    } catch (e) {
+      }    } catch (e) {
       setState(() {
         _error = 'تعذر العثور على الموقع، يرجى كتابة الاسم بشكل صحيح (مثال: صنعاء، اليمن).';
         _isLoading = false;
@@ -141,12 +166,14 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     setState(() {
       _prayerTimes = pt;
       _isLoading = false;
+      // إعادة تعيين تتبع الصلاة عند تغيير المواقيت
+      _lastTriggeredPrayer = null;
     });
 
     _startCountdownTimer();
   }
 
-  // 4. العداد التنازلي
+  // 4. العداد التنازلي + تشغيل الأذان
   void _startCountdownTimer() {
     _timer?.cancel();
     _updateCountdown(); // تحديث فوري
@@ -167,8 +194,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       final tomorrowParams = _selectedMethod.getParameters();
       tomorrowParams.madhab = _selectedMadhab;
       final tomorrowPt = PrayerTimes(
-        Coordinates(_currentLat!, _currentLng!),
-        DateComponents.from(tomorrow),
+        Coordinates(_currentLat!, _currentLng!),        DateComponents.from(tomorrow),
         tomorrowParams,
       );
       nextTime = tomorrowPt.fajr;
@@ -189,6 +215,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         final hours = diff.inHours.toString().padLeft(2, '0');
         final minutes = (diff.inMinutes % 60).toString().padLeft(2, '0');
         final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
+        
+        // 🔔 فحص تشغيل الأذان: إذا وصل الوقت + الصلاة مفعلة + لم تُشغّل بعد
+        if (diff.inSeconds <= 2 && diff.inSeconds >= 0) {
+          _triggerAdhanIfEnabled(_nextPrayerName);
+        }
+        
         if (mounted) {
           setState(() {
             _timeUntilNext = '$hours:$minutes:$seconds';
@@ -196,6 +228,105 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         }
       }
     }
+  }
+
+  // تشغيل الأذان إذا كان مفعلاً في الإعدادات
+  Future<void> _triggerAdhanIfEnabled(String prayerName) async {
+    final settings = context.read<SettingsProvider>();
+    
+    // التحقق: هل الصلاة مفعلة؟ + هل لم تُشغّل اليوم؟ + هل الصوت لا يعمل حالياً؟
+    if (!settings.prayerNotifications[prayerName]!) return;
+    
+    final today = DateTime.now();
+    if (_lastTriggeredPrayer == prayerName && 
+        _lastTriggeredDate?.day == today.day && 
+        _lastTriggeredDate?.month == today.month && 
+        _lastTriggeredDate?.year == today.year) {
+      return; // تم التشغيل اليوم بالفعل
+    }    
+    // تشغيل الصوت
+    await _playAdhanAudio(settings.getMuazzinAudioPath());
+    
+    // تسجيل التشغيل
+    _lastTriggeredPrayer = prayerName;
+    _lastTriggeredDate = today;
+    
+    // إشعار مرئي داخل التطبيق
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.mosque, color: Theme.of(context).colorScheme.onPrimary),
+              const SizedBox(width: 12),
+              Expanded(child: Text('🕌 حان وقت صلاة $prayerName', style: GoogleFonts.ibmPlexSansArabic())),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  // تشغيل ملف الأذان
+  Future<void> _playAdhanAudio(String audioPath) async {
+    if (_isAdhanPlaying) return;
+    
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(AssetSource(audioPath));
+      _isAdhanPlaying = true;
+      
+      // عند انتهاء الصوت
+      _audioPlayer.onPlayerComplete.listen((_) {
+        _isAdhanPlaying = false;
+      });
+      
+      // في حال حدوث خطأ
+      _audioPlayer.onError.listen((error) {
+        _isAdhanPlaying = false;
+        debugPrint('❌ خطأ في تشغيل الأذان: $error');
+      });
+    } catch (e) {
+      _isAdhanPlaying = false;
+      debugPrint('❌ خطأ في تشغيل الأذان: $e');
+    }  }
+
+  // أزرار التحكم بالصوت (اختياري - تظهر عند تشغيل الأذان)
+  Widget _buildAdhanControls() {
+    if (!_isAdhanPlaying) return const SizedBox.shrink();
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.volume_up, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Text(
+            'جاري تشغيل الأذان...',
+            style: GoogleFonts.ibmPlexSansArabic(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            icon: const Icon(Icons.stop_circle_rounded),
+            color: Theme.of(context).colorScheme.primary,
+            onPressed: () => _audioPlayer.stop(),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getArabicPrayerName(Prayer prayer) {
@@ -211,7 +342,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   }
 
   // ------------------------- واجهة المستخدم -------------------------
-
   // نافذة الإعدادات (Bottom Sheet) الاحترافية
   void _showSettingsSheet() {
     final cityController = TextEditingController();
@@ -260,8 +390,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                     // قسم البحث
                     Text('البحث اليدوي:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 16)),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
+                    Row(                      children: [
                         Expanded(
                           child: TextFormField(
                             controller: countryController,
@@ -310,7 +439,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                     ),
 
                     const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider()),
-
                     // قسم طرق الحساب
                     Text('طريقة الحساب الفلكي:', style: GoogleFonts.ibmPlexSansArabic(fontWeight: FontWeight.w600, fontSize: 16)),
                     const SizedBox(height: 12),
@@ -360,8 +488,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                           icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.primary),
                           items: const [
                             DropdownMenuItem(value: Madhab.shafi, child: Text('شافعي، مالكي، حنبلي (الجمهور)')),
-                            DropdownMenuItem(value: Madhab.hanafi, child: Text('حنفي')),
-                          ],
+                            DropdownMenuItem(value: Madhab.hanafi, child: Text('حنفي')),                          ],
                           onChanged: (val) {
                             if (val != null) {
                               setSheetState(() => _selectedMadhab = val);
@@ -410,8 +537,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                   const SizedBox(height: 16),
                   Text('جاري التجهيز...', style: GoogleFonts.ibmPlexSansArabic()),
                 ],
-              ),
-            )
+              ),            )
           : _error != null
               ? _buildErrorView(colorScheme)
               : _buildMainContent(theme),
@@ -460,8 +586,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           // البطاقة العلوية الفاخرة (Hero Card)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(24),            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
                 begin: Alignment.topLeft,
@@ -510,6 +635,10 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           ),
           
           const SizedBox(height: 32),
+                    // عنصر تحكم تشغيل الأذان
+          _buildAdhanControls(),
+          
+          const SizedBox(height: 16),
           
           // قائمة الصلوات المنسقة
           ...prayers.map((p) {
@@ -555,8 +684,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                       const SizedBox(width: 16),
                       Text(
                         p['name'] as String,
-                        style: GoogleFonts.ibmPlexSansArabic(
-                          fontSize: 18,
+                        style: GoogleFonts.ibmPlexSansArabic(                          fontSize: 18,
                           fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
                           color: isNext ? theme.colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
                         ),
