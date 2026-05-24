@@ -21,25 +21,20 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   String _locationText = 'جاري تحديد الموقع...';
   String? _error;
 
-  // الإعدادات
   CalculationMethod _selectedMethod = CalculationMethod.umm_al_qura;
   Madhab _selectedMadhab = Madhab.shafi;
   double? _currentLat;
   double? _currentLng;
 
-  // مواقيت الصلاة والعداد
   PrayerTimes? _prayerTimes;
   Timer? _timer;
   String _timeUntilNext = '--:--:--';
   Prayer _nextPrayerEnum = Prayer.none;
   String _nextPrayerName = '';
 
-  // مشغل الصوت
   final AudioPlayer _audioPlayer = AudioPlayer();
-  String? _currentlyPlayingPrayer;
   bool _isAdhanPlaying = false;
 
-  // تتبع آخر صلاة تم تشغيل الأذان لها لتجنب التكرار
   String? _lastTriggeredPrayer;
   DateTime? _lastTriggeredDate;
 
@@ -47,12 +42,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     'تقويم أم القرى (مكة / اليمن / الخليج)': CalculationMethod.umm_al_qura,
     'رابطة العالم الإسلامي': CalculationMethod.muslim_world_league,
     'الهيئة المصرية العامة للمساحة': CalculationMethod.egyptian,
-    'جامعة العلوم الإسلامية (كراتشي)': CalculationMethod.karachi,    'الاتحاد الإسلامي بأمريكا الشمالية': CalculationMethod.north_america,
+    'جامعة العلوم الإسلامية (كراتشي)': CalculationMethod.karachi,
+    'الاتحاد الإسلامي بأمريكا الشمالية': CalculationMethod.north_america,
     'دبي / الإمارات': CalculationMethod.dubai,
     'الكويت': CalculationMethod.kuwait,
     'قطر': CalculationMethod.qatar,
   };
-
   @override
   void initState() {
     super.initState();
@@ -97,10 +92,10 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       if (permission == LocationPermission.deniedForever) {
         throw 'صلاحية الموقع مرفوضة. استخدم البحث اليدوي.';
       }
+
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-
       _currentLat = pos.latitude;
       _currentLng = pos.longitude;
 
@@ -145,12 +140,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     } catch (e) {
       setState(() {
         _error = 'تعذر العثور على الموقع، يرجى كتابة الاسم بشكل صحيح (مثال: صنعاء، اليمن).';
-        _isLoading = false;      });
+        _isLoading = false;
+      });
     }
   }
 
-  void _calculateAdhanTimes() {
-    if (_currentLat == null || _currentLng == null) return;
+  void _calculateAdhanTimes() {    if (_currentLat == null || _currentLng == null) return;
 
     final coordinates = Coordinates(_currentLat!, _currentLng!);
     final params = _selectedMethod.getParameters();
@@ -194,12 +189,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       _nextPrayerEnum = Prayer.fajr;
       _nextPrayerName = 'الفجر';
     } else {
-      nextTime = _prayerTimes!.timeForPrayer(_prayerTimes!.nextPrayer());      _nextPrayerEnum = _prayerTimes!.nextPrayer();
+      nextTime = _prayerTimes!.timeForPrayer(_prayerTimes!.nextPrayer());
+      _nextPrayerEnum = _prayerTimes!.nextPrayer();
       _nextPrayerName = _getArabicPrayerName(_nextPrayerEnum);
     }
 
-    if (nextTime != null) {
-      final diff = nextTime.difference(now);
+    if (nextTime != null) {      final diff = nextTime.difference(now);
       if (diff.isNegative) {
         _calculateAdhanTimes();
       } else {
@@ -243,12 +238,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
-            children: [              Icon(Icons.mosque, color: Theme.of(context).colorScheme.onPrimary),
+            children: [
+              Icon(Icons.mosque, color: Theme.of(context).colorScheme.onPrimary),
               const SizedBox(width: 12),
               Expanded(child: Text('🕌 حان وقت صلاة $prayerName', style: GoogleFonts.ibmPlexSansArabic())),
             ],
-          ),
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          ),          backgroundColor: Theme.of(context).colorScheme.primary,
           duration: const Duration(seconds: 5),
           behavior: SnackBarBehavior.floating,
         ),
@@ -273,15 +268,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         }
       });
       
-      // ✅ تم التعديل: استخدام onPlayerError بدلاً من onError (في الإصدار 6.x)
-      _audioPlayer.onPlayerError.listen((event) {
-        if (mounted) {
-          setState(() {
-            _isAdhanPlaying = false;
-          });
-        }
-        debugPrint('❌ خطأ في تشغيل الأذان: ${event.message}');
-      });
+      // ✅ تم التعديل: إزالة onPlayerError لأنه غير موجود في الإصدار 6.6.0
+      // معالجة الأخطاء تتم عبر try-catch أعلاه
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -292,7 +280,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     }
   }
 
-  Widget _buildAdhanControls() {    if (!_isAdhanPlaying) return const SizedBox.shrink();
+  Widget _buildAdhanControls() {
+    if (!_isAdhanPlaying) return const SizedBox.shrink();
     
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -303,8 +292,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        mainAxisAlignment: MainAxisAlignment.center,        children: [
           Icon(Icons.volume_up, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Text(
@@ -341,7 +329,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     final cityController = TextEditingController();
     final countryController = TextEditingController();
 
-    showModalBottomSheet(      context: context,
+    showModalBottomSheet(
+      context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
@@ -352,8 +341,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
+              decoration: BoxDecoration(                color: theme.scaffoldBackgroundColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, spreadRadius: 5),
@@ -390,7 +378,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                             decoration: InputDecoration(
                               hintText: 'الدولة (اليمن)',
                               prefixIcon: const Icon(Icons.flag_rounded),
-                              filled: true,                              fillColor: theme.colorScheme.surface,
+                              filled: true,
+                              fillColor: theme.colorScheme.surface,
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                             ),
                           ),
@@ -401,8 +390,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                             controller: cityController,
                             decoration: InputDecoration(
                               hintText: 'المدينة (صنعاء)',
-                              prefixIcon: const Icon(Icons.location_city_rounded),
-                              filled: true,
+                              prefixIcon: const Icon(Icons.location_city_rounded),                              filled: true,
                               fillColor: theme.colorScheme.surface,
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                             ),
@@ -439,7 +427,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: DropdownButtonHideUnderline(                        child: DropdownButton<CalculationMethod>(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<CalculationMethod>(
                           isExpanded: true,
                           value: _selectedMethod,
                           icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.primary),
@@ -450,8 +439,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) {
-                              setSheetState(() => _selectedMethod = val);
+                            if (val != null) {                              setSheetState(() => _selectedMethod = val);
                               setState(() {
                                 _selectedMethod = val;
                                 _calculateAdhanTimes();
@@ -488,7 +476,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                                 _calculateAdhanTimes();
                               });
                             }
-                          },                        ),
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -499,8 +488,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           }
         );
       },
-    );
-  }
+    );  }
 
   @override
   Widget build(BuildContext context) {
@@ -537,7 +525,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
   Widget _buildErrorView(ColorScheme colorScheme) {
     return Padding(
-      padding: const EdgeInsets.all(24),      child: Center(
+      padding: const EdgeInsets.all(24),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -548,8 +537,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             ElevatedButton.icon(
               onPressed: _showSettingsSheet,
               icon: const Icon(Icons.search_rounded),
-              label: Text('البحث يدوياً', style: GoogleFonts.ibmPlexSansArabic()),
-            )
+              label: Text('البحث يدوياً', style: GoogleFonts.ibmPlexSansArabic()),            )
           ],
         ),
       ),
@@ -563,7 +551,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       {'enum': Prayer.fajr, 'name': 'الفجر', 'time': _prayerTimes!.fajr, 'icon': Icons.nightlight_round},
       {'enum': Prayer.sunrise, 'name': 'الشروق', 'time': _prayerTimes!.sunrise, 'icon': Icons.wb_twilight_rounded},
       {'enum': Prayer.dhuhr, 'name': 'الظهر', 'time': _prayerTimes!.dhuhr, 'icon': Icons.wb_sunny_rounded},
-      // ✅ تم التعديل: partly_cloudy_day غير موجود، استبدلناه بـ cloud_queue
       {'enum': Prayer.asr, 'name': 'العصر', 'time': _prayerTimes!.asr, 'icon': Icons.cloud_queue},
       {'enum': Prayer.maghrib, 'name': 'المغرب', 'time': _prayerTimes!.maghrib, 'icon': Icons.brightness_6_rounded},
       {'enum': Prayer.isha, 'name': 'العشاء', 'time': _prayerTimes!.isha, 'icon': Icons.brightness_3_rounded},
@@ -586,7 +573,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(color: theme.colorScheme.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
-              ],            ),
+              ],
+            ),
             child: Column(
               children: [
                 Row(
@@ -598,8 +586,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                Text('الصلاة القادمة', style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary.withOpacity(0.8), fontSize: 16)),
-                const SizedBox(height: 4),
+                Text('الصلاة القادمة', style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary.withOpacity(0.8), fontSize: 16)),                const SizedBox(height: 4),
                 Text(_nextPrayerName, style: GoogleFonts.ibmPlexSansArabic(color: theme.colorScheme.onPrimary, fontSize: 36, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Container(
@@ -635,7 +622,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             final formattedTime = DateFormat('hh:mm a', 'ar').format(timeDate);
             
             return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),              margin: const EdgeInsets.only(bottom: 16),
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
                 color: isNext ? theme.colorScheme.primary : theme.colorScheme.surface,
@@ -647,8 +635,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                 boxShadow: isNext ? [
                   BoxShadow(color: theme.colorScheme.primary.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 5))
                 ] : [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
-                ],
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -684,7 +671,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: isNext ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
-                    ),                  ),
+                    ),
+                  ),
                 ],
               ),
             );

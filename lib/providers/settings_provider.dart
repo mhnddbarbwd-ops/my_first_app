@@ -11,7 +11,7 @@ class SettingsProvider with ChangeNotifier {
   // إعدادات الأذان
   Map<String, bool> _prayerNotifications = {
     'الفجر': true,
-    'الشروق': false, // مغلق افتراضياً
+    'الشروق': false,
     'الظهر': true,
     'العصر': true,
     'المغرب': true,
@@ -56,28 +56,30 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleTimeFormat(bool value) async {
+  // ✅ تم التعديل: تغيير نوع الإرجاع من void إلى Future<void>
+  Future<void> toggleTimeFormat(bool value) async {
     _is24HourFormat = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is24HourFormat', value);
     notifyListeners();
   }
 
-  void toggleProphetReminder(bool value) async {
+  Future<void> toggleProphetReminder(bool value) async {
     _prophetReminderEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('prophetReminderEnabled', value);
     notifyListeners();
   }
 
-  void setProphetInterval(int minutes) async {
+  Future<void> setProphetInterval(int minutes) async {
     _prophetReminderInterval = minutes;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('prophetReminderInterval', minutes);
     notifyListeners();
   }
 
-  void togglePrayerNotification(String prayer, bool value) async {
+  // ✅ تم التعديل: تغيير نوع الإرجاع من void إلى Future<void>
+  Future<void> togglePrayerNotification(String prayer, bool value) async {
     _prayerNotifications[prayer] = value;
     final prefs = await SharedPreferences.getInstance();
     
@@ -94,13 +96,13 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void setMuazzin(String muazzin) async {
+  // ✅ تم التعديل: تغيير نوع الإرجاع من void إلى Future<void>  Future<void> setMuazzin(String muazzin) async {
     _selectedMuazzin = muazzin;
-    final prefs = await SharedPreferences.getInstance();    await prefs.setString('muazzin', muazzin);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('muazzin', muazzin);
     notifyListeners();
   }
 
-  // دالة مساعدة للحصول على مسار ملف الصوت حسب المؤذن المختار
   String getMuazzinAudioPath() {
     final Map<String, String> muazzinFiles = {
       'ناصر القطامي': 'آذان ناصر القطامي.mp3',
